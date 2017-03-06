@@ -55,31 +55,31 @@ void print_array(int ni, int nj,
 
 /* Main computational kernel. The whole function will be timed,
    including the call and return. */
-static
+    static
 void kernel_conv2d(int ni,
-		   int nj,
-		   DATA_TYPE POLYBENCH_2D(A,NI,NJ,ni,nj),
-		   DATA_TYPE POLYBENCH_2D(B,NI,NJ,ni,nj))
+        int nj,
+        DATA_TYPE POLYBENCH_2D(A,NI,NJ,ni,nj),
+        DATA_TYPE POLYBENCH_2D(B,NI,NJ,ni,nj))
 {
-  int i, j;
-  #pragma scop
-  #pragma acc data copyin (A) copyout (B)
-  {
-    #pragma acc parallel
+    int i, j;
+    //#pragma scop
+    #pragma omp target data map(to: A[0:_PB_NI]) map(from: B[0:_PB_NI]) //acc data copyin (A) copyout (B)
     {
-      #pragma acc loop
-      for (i = 1; i < _PB_NI - 1; ++i)
-	#pragma acc loop
-	for (j = 1; j < _PB_NJ - 1; ++j)
-	  {
-	    B[i][j]
-	      =  0.2 * A[i-1][j-1] + 0.5 * A[i-1][j] + -0.8 * A[i-1][j+1]
-	      + -0.3 * A[ i ][j-1] + 0.6 * A[ i ][j] + -0.9 * A[ i ][j+1]
-	      +  0.4 * A[i+1][j-1] + 0.7 * A[i+1][j] +  0.1 * A[i+1][j+1];
-	  }
+        //#pragma acc parallel
+        {
+            #pragma omp target teams distribute parallel for schedule(static, 1) collapse(2) //acc loop
+            for (i = 1; i < _PB_NI - 1; ++i)
+            //#pragma acc loop
+                for (j = 1; j < _PB_NJ - 1; ++j)
+                {
+                    B[i][j]
+                        =  0.2 * A[i-1][j-1] + 0.5 * A[i-1][j] + -0.8 * A[i-1][j+1]
+                        + -0.3 * A[ i ][j-1] + 0.6 * A[ i ][j] + -0.9 * A[ i ][j+1]
+                        +  0.4 * A[i+1][j-1] + 0.7 * A[i+1][j] +  0.1 * A[i+1][j+1];
+                }
+        }
     }
-  }
-  #pragma endscop
+    //#pragma endscop
 }
 
 

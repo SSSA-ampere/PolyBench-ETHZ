@@ -60,22 +60,22 @@ void kernel_seidel_2d(int tsteps,
 {
   int t, i, j;
 
-  #pragma scop
-  #pragma acc data copy(A)
+  //#pragma scop
+  #pragma omp target data map(tofrom: A[0:N]) //acc data copy(A)
   {
-    #pragma acc parallel
+    //#pragma acc parallel
     {
       for (t = 0; t <= _PB_TSTEPS - 1; t++)
-	#pragma acc loop
+    #pragma omp target teams distribute parallel for schedule(static, 1) collapse(2) //acc loop
 	for (i = 1; i<= _PB_N - 2; i++)
-	  #pragma acc loop
+	  //#pragma acc loop
 	  for (j = 1; j <= _PB_N - 2; j++)
 	    A[i][j] = (A[i-1][j-1] + A[i-1][j] + A[i-1][j+1]
 		       + A[i][j-1] + A[i][j] + A[i][j+1]
 		       + A[i+1][j-1] + A[i+1][j] + A[i+1][j+1])/9.0;
     }
   }
-  #pragma endscop
+  //#pragma endscop
 }
 
 

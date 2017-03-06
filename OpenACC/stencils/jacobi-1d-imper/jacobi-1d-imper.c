@@ -64,17 +64,17 @@ void kernel_jacobi_1d_imper(int tsteps,
 {
   int t, i, j;
 
-  #pragma scop
-  #pragma acc data copy(A) copyin(B)
+  //#pragma scop
+  #pragma omp target data map(tofrom: A[0:N]) map(to: B[0:N]) //acc data copy(A) copyin(B)
   {
-    #pragma acc parallel
+    //#pragma acc parallel
     {
       for (t = 0; t < _PB_TSTEPS; t++)
 	{
-          #pragma acc loop
+          #pragma omp target teams distribute parallel for schedule(static, 1) //acc loop
 	  for (i = 1; i < _PB_N - 1; i++)
 	    B[i] = 0.33333 * (A[i-1] + A[i] + A[i + 1]);
-	  #pragma acc loop
+	  #pragma omp target teams distribute parallel for schedule(static, 1) //acc loop
 	  for (j = 1; j < _PB_N - 1; j++)
 	    A[j] = B[j];
 	}
