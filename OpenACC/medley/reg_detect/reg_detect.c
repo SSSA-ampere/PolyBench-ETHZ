@@ -7,6 +7,15 @@
  * 
  * Copyright 2013, The University of Delaware
  */
+
+#define  EXTRALARGE_DATASET
+//#define POLYBENCH_DUMP_ARRAYS
+//#define DATA_TYPE long
+//#define DATA_PRINTF_MODIFIER "%ld "
+
+#define NUM_TEAMS 
+#define THREAD_LIMIT
+
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
@@ -23,9 +32,9 @@
 /* Array initialization. */
 static
 void init_array(int maxgrid,
-		DATA_TYPE POLYBENCH_2D(sum_tang,MAXGRID,MAXGRID,maxgrid,maxgrid),
-		DATA_TYPE POLYBENCH_2D(mean,MAXGRID,MAXGRID,maxgrid,maxgrid),
-		DATA_TYPE POLYBENCH_2D(path,MAXGRID,MAXGRID,maxgrid,maxgrid))
+    DATA_TYPE POLYBENCH_2D(sum_tang,MAXGRID,MAXGRID,maxgrid,maxgrid),
+    DATA_TYPE POLYBENCH_2D(mean,MAXGRID,MAXGRID,maxgrid,maxgrid),
+    DATA_TYPE POLYBENCH_2D(path,MAXGRID,MAXGRID,maxgrid,maxgrid))
 {
   int i, j;
 
@@ -42,7 +51,7 @@ void init_array(int maxgrid,
    Can be used also to check the correctness of the output. */
 static
 void print_array(int maxgrid,
-		 DATA_TYPE POLYBENCH_2D(path,MAXGRID,MAXGRID,maxgrid,maxgrid))
+     DATA_TYPE POLYBENCH_2D(path,MAXGRID,MAXGRID,maxgrid,maxgrid))
 {
   int i, j;
 
@@ -60,52 +69,46 @@ void print_array(int maxgrid,
 /* Source (modified): http://www.cs.uic.edu/~iluican/reg_detect.c */
 static
 void kernel_reg_detect(int niter, int maxgrid, int length,
-		       DATA_TYPE POLYBENCH_2D(sum_tang,MAXGRID,MAXGRID,maxgrid,maxgrid),
-		       DATA_TYPE POLYBENCH_2D(mean,MAXGRID,MAXGRID,maxgrid,maxgrid),
-		       DATA_TYPE POLYBENCH_2D(path,MAXGRID,MAXGRID,maxgrid,maxgrid),
-		       DATA_TYPE POLYBENCH_3D(diff,MAXGRID,MAXGRID,LENGTH,maxgrid,maxgrid,length),
-		       DATA_TYPE POLYBENCH_3D(sum_diff,MAXGRID,MAXGRID,LENGTH,maxgrid,maxgrid,length))
+           DATA_TYPE POLYBENCH_2D(sum_tang,MAXGRID,MAXGRID,maxgrid,maxgrid),
+           DATA_TYPE POLYBENCH_2D(mean,MAXGRID,MAXGRID,maxgrid,maxgrid),
+           DATA_TYPE POLYBENCH_2D(path,MAXGRID,MAXGRID,maxgrid,maxgrid),
+           DATA_TYPE POLYBENCH_3D(diff,MAXGRID,MAXGRID,LENGTH,maxgrid,maxgrid,length),
+           DATA_TYPE POLYBENCH_3D(sum_diff,MAXGRID,MAXGRID,LENGTH,maxgrid,maxgrid,length))
 {
   int t, i, j, cnt;
 
-  #pragma scop
-  #pragma acc data copy(path) copyin(sum_tang,mean) create(diff,sum_diff)
+  #pragma omp target data map(tofrom: path) map(to: sum_tang, mean) 
   {
-    #pragma acc parallel
+    for (t = 0; t < _PB_NITER; t++)
     {
-      for (t = 0; t < _PB_NITER; t++)
-	{
-	  #pragma acc loop
-	  for (j = 0; j <= _PB_MAXGRID - 1; j++)
-	    for (i = j; i <= _PB_MAXGRID - 1; i++)
-	      #pragma acc loop
-	      for (cnt = 0; cnt <= _PB_LENGTH - 1; cnt++)
-		diff[j][i][cnt] = sum_tang[j][i];
-	  #pragma acc loop
-	  for (j = 0; j <= _PB_MAXGRID - 1; j++)
-	    {
-	      for (i = j; i <= _PB_MAXGRID - 1; i++)
-		{
-		  sum_diff[j][i][0] = diff[j][i][0];
-		  #pragma acc loop
-		  for (cnt = 1; cnt <= _PB_LENGTH - 1; cnt++)
-		    sum_diff[j][i][cnt] = sum_diff[j][i][cnt - 1] + diff[j][i][cnt];
-		  mean[j][i] = sum_diff[j][i][_PB_LENGTH - 1];
-		}
-	    }
-	  
-	  #pragma acc loop
-	  for (i = 0; i <= _PB_MAXGRID - 1; i++)
-	    path[0][i] = mean[0][i];
-	  #pragma acc loop
-	  for (j = 1; j <= _PB_MAXGRID - 1; j++)
-	    #pragma acc loop
-	    for (i = j; i <= _PB_MAXGRID - 1; i++)
-	      path[j][i] = path[j - 1][i - 1] + mean[j][i];
-	}
+      #pragma omp target teams distribute parallel for NUM_TEAMS THREAD_LIMIT private(i, j, cnt) shared(diff, sum_tang)
+      for (j = 0; j <= _PB_MAXGRID - 1; j++)
+        for (i = j; i <= _PB_MAXGRID - 1; i++)
+          for (cnt = 0; cnt <= _PB_LENGTH - 1; cnt++)
+            diff[j][i][cnt] = sum_tang[j][i];
+
+      #pragma omp target teams distribute parallel for NUM_TEAMS THREAD_LIMIT private(i, j, cnt) shared(diff, sum_diff, mean)
+      for (j = 0; j <= _PB_MAXGRID - 1; j++)
+      {
+        for (i = j; i <= _PB_MAXGRID - 1; i++)
+        {
+          sum_diff[j][i][0] = diff[j][i][0];
+          for (cnt = 1; cnt <= _PB_LENGTH - 1; cnt++)
+            sum_diff[j][i][cnt] = sum_diff[j][i][cnt - 1] + diff[j][i][cnt];
+          mean[j][i] = sum_diff[j][i][_PB_LENGTH - 1];
+        }
+      }
+      
+      #pragma omp target teams distribute parallel for NUM_TEAMS THREAD_LIMIT private(i) shared(mean, path)
+      for (i = 0; i <= _PB_MAXGRID - 1; i++)
+        path[0][i] = mean[0][i];
+
+      #pragma omp target teams distribute parallel for NUM_TEAMS THREAD_LIMIT private(i, j) shared(mean, path)
+      for (j = 1; j <= _PB_MAXGRID - 1; j++)
+        for (i = j; i <= _PB_MAXGRID - 1; i++)
+          path[j][i] = path[j - 1][i - 1] + mean[j][i];
     }
   }
-  #pragma endscop
 }
 
 int main(int argc, char** argv)
@@ -124,20 +127,20 @@ int main(int argc, char** argv)
   
   /* Initialize array(s). */
   init_array (maxgrid,
-	      POLYBENCH_ARRAY(sum_tang),
-	      POLYBENCH_ARRAY(mean),
-	      POLYBENCH_ARRAY(path));
+        POLYBENCH_ARRAY(sum_tang),
+        POLYBENCH_ARRAY(mean),
+        POLYBENCH_ARRAY(path));
 
   /* Start timer. */
   polybench_start_instruments;
 
   /* Run kernel. */
   kernel_reg_detect (niter, maxgrid, length,
-		     POLYBENCH_ARRAY(sum_tang),
-		     POLYBENCH_ARRAY(mean),
-		     POLYBENCH_ARRAY(path),
-		     POLYBENCH_ARRAY(diff),
-		     POLYBENCH_ARRAY(sum_diff));
+         POLYBENCH_ARRAY(sum_tang),
+         POLYBENCH_ARRAY(mean),
+         POLYBENCH_ARRAY(path),
+         POLYBENCH_ARRAY(diff),
+         POLYBENCH_ARRAY(sum_diff));
 
   /* Stop and print timer. */
   polybench_stop_instruments;

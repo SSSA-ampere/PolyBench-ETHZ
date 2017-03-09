@@ -7,6 +7,15 @@
  * 
  * Copyright 2013, The University of Delaware
  */
+
+#define  EXTRALARGE_DATASET
+//#define POLYBENCH_DUMP_ARRAYS
+//#define DATA_TYPE float
+//#define DATA_PRINTF_MODIFIER "%0.2f "
+
+#define NUM_TEAMS 
+#define THREAD_LIMIT
+
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
@@ -23,7 +32,7 @@
 /* Array initialization. */
 static
 void init_array (int n,
-		 DATA_TYPE POLYBENCH_2D(path,N,N,n,n))
+     DATA_TYPE POLYBENCH_2D(path,N,N,n,n))
 {
   int i, j;
 
@@ -37,7 +46,7 @@ void init_array (int n,
    Can be used also to check the correctness of the output. */
 static
 void print_array(int n,
-		 DATA_TYPE POLYBENCH_2D(path,N,N,n,n))
+     DATA_TYPE POLYBENCH_2D(path,N,N,n,n))
 
 {
   int i, j;
@@ -55,25 +64,17 @@ void print_array(int n,
    including the call and return. */
 static
 void kernel_floyd_warshall(int n,
-			   DATA_TYPE POLYBENCH_2D(path,N,N,n,n))
+     DATA_TYPE POLYBENCH_2D(path,N,N,n,n))
 {
   int i, j, k;
-  #pragma scop
-  #pragma acc data copy(path)
+  #pragma omp target data map(tofrom: path)
   {
-    #pragma acc parallel
-    {
-      for (k = 0; k < _PB_N; k++)
-	{
-	  #pragma acc loop
-	  for(i = 0; i < _PB_N; i++)
-	    for (j = 0; j < _PB_N; j++)
-	      path[i][j] = path[i][j] < path[i][k] + path[k][j] ?
-		path[i][j] : path[i][k] + path[k][j];
-	}
-    }
+    #pragma omp target teams distribute parallel for NUM_TEAMS THREAD_LIMIT private(i, j, k) shared(path)
+    for (k = 0; k < _PB_N; k++)
+      for(i = 0; i < _PB_N; i++)
+        for (j = 0; j < _PB_N; j++)
+          path[i][j] = path[i][j] < path[i][k] + path[k][j] ? path[i][j] : path[i][k] + path[k][j];
   }
-  #pragma endscop
 }
 
 

@@ -7,6 +7,15 @@
  * 
  * Copyright 2013, The University of Delaware
  */
+
+#define EXTRALARGE_DATASET
+//#define POLYBENCH_DUMP_ARRAYS
+//#define DATA_TYPE float
+//#define DATA_PRINTF_MODIFIER "%0.2f "
+
+#define NUM_TEAMS 
+#define THREAD_LIMIT
+
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
@@ -23,8 +32,8 @@
 /* Array initialization. */
 static
 void init_array (int m, int n,
-		 DATA_TYPE *float_n,
-		 DATA_TYPE POLYBENCH_2D(data,M,N,m,n))
+     DATA_TYPE *float_n,
+     DATA_TYPE POLYBENCH_2D(data,M,N,m,n))
 {
   int i, j;
 
@@ -40,7 +49,7 @@ void init_array (int m, int n,
    Can be used also to check the correctness of the output. */
 static
 void print_array(int m,
-		 DATA_TYPE POLYBENCH_2D(symmat,M,M,m,m))
+     DATA_TYPE POLYBENCH_2D(symmat,M,M,m,m))
 
 {
   int i, j;
@@ -58,50 +67,46 @@ void print_array(int m,
    including the call and return. */
 static
 void kernel_covariance(int m, int n,
-		       DATA_TYPE float_n,
-		       DATA_TYPE POLYBENCH_2D(data,M,N,m,n),
-		       DATA_TYPE POLYBENCH_2D(symmat,M,M,m,m),
-		       DATA_TYPE POLYBENCH_1D(mean,M,m))
+           DATA_TYPE float_n,
+           DATA_TYPE POLYBENCH_2D(data,M,N,m,n),
+           DATA_TYPE POLYBENCH_2D(symmat,M,M,m,m),
+           DATA_TYPE POLYBENCH_1D(mean,M,m))
 {
   int i, j, j1, j2;
   
-  #pragma scop
   /* Determine mean of column vectors of input data matrix */
-  #pragma acc data copyin(data) create(mean) copyout(symmat)
+  #pragma omp target data map(to: data) map(from: symmat)
   {
-    #pragma acc parallel
-    {
-      #pragma acc loop
+      #pragma omp target teams distribute parallel for NUM_TEAMS THREAD_LIMIT private(i, j) shared(mean, data)
       for (j = 0; j < _PB_M; j++)
-	{
-	  mean[j] = 0.0;
-          #pragma acc loop
-	  for (i = 0; i < _PB_N; i++)
-	    mean[j] += data[i][j];
-	  mean[j] /= float_n;
-	}
+      {
+        mean[j] = 0.0;
+        for (i = 0; i < _PB_N; i++)
+          mean[j] += data[i][j];
+        mean[j] /= float_n;
+      }
       
       /* Center the column vectors. */
-      #pragma acc loop
+      #pragma omp target teams distribute parallel for NUM_TEAMS THREAD_LIMIT collapse(2) private(i, j) shared(mean, data)
       for (i = 0; i < _PB_N; i++)
-        #pragma acc loop
-	for (j = 0; j < _PB_M; j++)
-	  data[i][j] -= mean[j];
+      {
+        for (j = 0; j < _PB_M; j++)
+          data[i][j] -= mean[j];
+      }
       
       /* Calculate the m * m covariance matrix. */
-      #pragma acc loop
+      #pragma omp target teams distribute parallel for NUM_TEAMS THREAD_LIMIT collapse(2) private(i, j1, j2) shared(symmat, data)
       for (j1 = 0; j1 < _PB_M; j1++)
-	#pragma acc loop
-	for (j2 = j1; j2 < _PB_M; j2++)
-	  {
-	    symmat[j1][j2] = 0.0;
-	    for (i = 0; i < _PB_N; i++)
-	      symmat[j1][j2] += data[i][j1] * data[i][j2];
-	    symmat[j2][j1] = symmat[j1][j2];
-	  }
-    }
+      {
+        for (j2 = j1; j2 < _PB_M; j2++)
+          {
+            symmat[j1][j2] = 0.0;
+            for (i = 0; i < _PB_N; i++)
+              symmat[j1][j2] += data[i][j1] * data[i][j2];
+            symmat[j2][j1] = symmat[j1][j2];
+          }
+      }
   }
-  #pragma endscop
 }
 
 int main(int argc, char** argv)
@@ -124,9 +129,9 @@ int main(int argc, char** argv)
 
   /* Run kernel. */
   kernel_covariance (m, n, float_n,
-		     POLYBENCH_ARRAY(data),
-		     POLYBENCH_ARRAY(symmat),
-		     POLYBENCH_ARRAY(mean));
+         POLYBENCH_ARRAY(data),
+         POLYBENCH_ARRAY(symmat),
+         POLYBENCH_ARRAY(mean));
 
   /* Stop and print timer. */
   polybench_stop_instruments;
