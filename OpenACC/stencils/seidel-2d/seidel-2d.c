@@ -66,7 +66,7 @@ void kernel_seidel_2d(int tsteps,
     //#pragma acc parallel
     {
       for (t = 0; t <= _PB_TSTEPS - 1; t++)
-    #pragma omp target teams distribute parallel for schedule(static, 1) collapse(2) //acc loop
+    #pragma omp target teams distribute parallel for schedule(static, 1) collapse(2) num_teams(1) thread_limit(1024) //acc loop
 	for (i = 1; i<= _PB_N - 2; i++)
 	  //#pragma acc loop
 	  for (j = 1; j <= _PB_N - 2; j++)

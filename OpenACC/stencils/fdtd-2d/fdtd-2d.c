@@ -77,43 +77,61 @@ void kernel_fdtd_2d(int tmax,
 		    DATA_TYPE POLYBENCH_2D(hz,NX,NY,nx,ny),
 		    DATA_TYPE POLYBENCH_1D(_fict_,TMAX,tmax))
 {
-  int t, i, j;
+
+#define NUM_TEAMS 1
+#define NUM_THREADS 1024
+
+  //int t, i, j;
   //#pragma scop
-  #pragma omp target data map(tofrom: ey[0:NX], ex[0:NX], hz[0:NX]) map(to: _fict_[0:TMAX]) //acc data copy(ey,ex,hz) copyin(_fict_)
+  #pragma omp target data map(tofrom: ey[0:NX], ex[0:NX], hz[0:NX]) //acc data copy(ey,ex,hz) copyin(_fict_)
   {
     //#pragma acc parallel
     {
-      for (t = 0; t < _PB_TMAX; t++)
+      for (int t = 0; t < _PB_TMAX; t++)
       {
-          #pragma omp target teams distribute parallel for schedule(static, 1) //acc loop
-          for (j = 0; j < _PB_NY; j++)
-              ey[0][j] = _fict_[t];
+
+        float myfict = _fict_[t];
+
+        #pragma omp target teams distribute parallel for schedule(static, 1) \
+            firstprivate(myfict) \
+            num_teams(NUM_TEAMS) num_threads(NUM_THREADS)
+        for (int j = 0; j < _PB_NY; j++) {
+          ey[0][j] = myfict;
+        }
+
+        #pragma omp target teams distribute parallel for schedule(static, 1) collapse(2) \
+            num_teams(NUM_TEAMS) num_threads(NUM_THREADS) //acc loop
+        for (int i = 1; i < _PB_NX; i++) {
           //#pragma acc loop
-          #pragma omp target teams distribute parallel for schedule(static, 1) collapse(2) //acc loop
-          for (i = 1; i < _PB_NX; i++)
-              //#pragma acc loop
-              //#pragma omp target teams distribute parallel for schedule(static, 1) //acc loop
-              for (j = 0; j < _PB_NY; j++)
-                  ey[i][j] = ey[i][j] - 0.5*(hz[i][j]-hz[i-1][j]);
+          for (int j = 0; j < _PB_NY; j++) {
+            ey[i][j] = ey[i][j] - 0.5*(hz[i][j]-hz[i-1][j]);
+          }
+        }
+
+        #pragma omp target teams distribute parallel for schedule(static, 1) collapse(2) \
+            num_teams(NUM_TEAMS) num_threads(NUM_THREADS) //acc loop
+        for (int i = 0; i < _PB_NX; i++) {
           //#pragma acc loop
-          #pragma omp target teams distribute parallel for schedule(static, 1) collapse(2) //acc loop
-          for (i = 0; i < _PB_NX; i++)
-              //#pragma acc loop
-              //#pragma omp target teams distribute parallel for schedule(static, 1) //acc loop
-              for (j = 1; j < _PB_NY; j++)
-                  ex[i][j] = ex[i][j] - 0.5*(hz[i][j]-hz[i][j-1]);
+          for (int j = 1; j < _PB_NY; j++) {
+            //printf("Hello: %d,%d.\n", i, j);
+            ex[i][j] = ex[i][j] - 0.5*(hz[i][j]-hz[i][j-1]);
+          }
+        }
+
+        #pragma omp target teams distribute parallel for schedule(static, 1) collapse(2) \
+            num_teams(NUM_TEAMS) num_threads(NUM_THREADS) //acc loop
+        for (int i = 0; i < _PB_NX - 1; i++) {
           //#pragma acc loop
-          #pragma omp target teams distribute parallel for schedule(static, 1) collapse(2) //acc loop
-          for (i = 0; i < _PB_NX - 1; i++)
-              //#pragma acc loop
-              //#pragma omp target teams distribute parallel for schedule(static, 1) //acc loop
-              for (j = 0; j < _PB_NY - 1; j++)
-                  hz[i][j] = hz[i][j] - 0.7*  (ex[i][j+1] - ex[i][j] +
-                          ey[i+1][j] - ey[i][j]);
+          //#pragma omp target teams distribute parallel for schedule(static, 1) //acc loop
+          for (int j = 0; j < _PB_NY - 1; j++) {
+            hz[i][j] = hz[i][j] - 0.7*  (ex[i][j+1] - ex[i][j] +
+                ey[i+1][j] - ey[i][j]);
+          }
+        }
       }
     }
   }
-  #pragma endscop
+  //#pragma endscop
 }
 
 

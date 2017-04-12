@@ -73,12 +73,12 @@ void kernel_jacobi_2d_imper(int tsteps,
     {
       for (t = 0; t < _PB_TSTEPS; t++)
 	{
-	  #pragma omp target teams distribute parallel for schedule(static, 1) collapse(2) //acc loop
+	  #pragma omp target teams distribute parallel for schedule(static, 1) collapse(2) num_teams(1) thread_limit(1024)//acc loop
 	  for (i = 1; i < _PB_N - 1; i++)
 	    //#pragma acc loop
 	    for (j = 1; j < _PB_N - 1; j++)
 	      B[i][j] = 0.2 * (A[i][j] + A[i][j-1] + A[i][1+j] + A[1+i][j] + A[i-1][j]);
-	  #pragma omp target teams distribute parallel for schedule(static, 1) collapse(2) //acc loop
+	  #pragma omp target teams distribute parallel for schedule(static, 1) collapse(2) num_teams(1) thread_limit(1024)//acc loop
 	  for (i = 1; i < _PB_N-1; i++)
 	    //#pragma acc loop
 	    for (j = 1; j < _PB_N-1; j++)

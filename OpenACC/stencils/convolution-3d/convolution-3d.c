@@ -65,31 +65,31 @@ void kernel_conv2d(int ni,
 		   DATA_TYPE POLYBENCH_3D(B,NI,NJ,NK,ni,nj,nk))
 {
   int i, j, k;
-  #pragma scop
-  #pragma acc data copyin (A) copyout (B)
+  //#pragma scop
+  #pragma omp target data map(to: A[0:NI]) map(from: B[0:NI]) //#pragma acc data copyin (A) copyout (B)
   {
-    #pragma acc parallel
+    //#pragma acc parallel
     {
-      #pragma acc loop
+      #pragma omp target teams distribute parallel for schedule(static, 1) num_teams(1) num_threads(1024) collapse(3) private(i,j,k) //#pragma acc loop
       for (i = 1; i < _PB_NI - 1; ++i)
-        #pragma acc loop
-	for (j = 1; j < _PB_NJ - 1; ++j)
-	  for (k = 1; k < _PB_NK - 1; ++k)
-	    {
-	      B[i][j][k]
-		=  2 * A[i-1][j-1][k-1]  +  4 * A[i+1][j-1][k-1]
-		+  5 * A[i-1][j-1][k-1]  +  7 * A[i+1][j-1][k-1]
-		+ -8 * A[i-1][j-1][k-1]  + 10 * A[i+1][j-1][k-1]
-		+ -3 * A[ i ][j-1][ k ]
-		+  6 * A[ i ][ j ][ k ]
-		+ -9 * A[ i ][j+1][ k ]
-		+  2 * A[i-1][j-1][k+1]  +  4 * A[i+1][j-1][k+1]
-		+  5 * A[i-1][ j ][k+1]  +  7 * A[i+1][ j ][k+1]
-		+ -8 * A[i-1][j+1][k+1]  + 10 * A[i+1][j+1][k+1];
-	    }
+//        #pragma acc loop
+        for (j = 1; j < _PB_NJ - 1; ++j)
+          for (k = 1; k < _PB_NK - 1; ++k)
+          {
+            B[i][j][k]
+              =  2 * A[i-1][j-1][k-1]  +  4 * A[i+1][j-1][k-1]
+              +  5 * A[i-1][j-1][k-1]  +  7 * A[i+1][j-1][k-1]
+              + -8 * A[i-1][j-1][k-1]  + 10 * A[i+1][j-1][k-1]
+              + -3 * A[ i ][j-1][ k ]
+              +  6 * A[ i ][ j ][ k ]
+              + -9 * A[ i ][j+1][ k ]
+              +  2 * A[i-1][j-1][k+1]  +  4 * A[i+1][j-1][k+1]
+              +  5 * A[i-1][ j ][k+1]  +  7 * A[i+1][ j ][k+1]
+              + -8 * A[i-1][j+1][k+1]  + 10 * A[i+1][j+1][k+1];
+          }
     }
   }
-  #pragma endscop
+  //#pragma endscop
 }
 
 

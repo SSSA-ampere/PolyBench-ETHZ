@@ -56,31 +56,34 @@ void print_array(int n,
 
 /* Main computational kernel. The whole function will be timed,
    including the call and return. */
-static
+  static
 void kernel_jacobi_1d_imper(int tsteps,
-			    int n,
-			    DATA_TYPE POLYBENCH_1D(A,N,n),
-			    DATA_TYPE POLYBENCH_1D(B,N,n))
+    int n,
+    DATA_TYPE POLYBENCH_1D(A,N,n),
+    DATA_TYPE POLYBENCH_1D(B,N,n))
 {
-  int t, i, j;
+  //int t, i, j;
 
   //#pragma scop
-  #pragma omp target data map(tofrom: A[0:N]) map(to: B[0:N]) //acc data copy(A) copyin(B)
+  #pragma omp target data map(tofrom: A[0:N]) map(tofrom: B[0:N])  //acc data copy(A) copyin(B)
   {
     //#pragma acc parallel
     {
-      for (t = 0; t < _PB_TSTEPS; t++)
-	{
-          #pragma omp target teams distribute parallel for schedule(static, 1) //acc loop
-	  for (i = 1; i < _PB_N - 1; i++)
-	    B[i] = 0.33333 * (A[i-1] + A[i] + A[i + 1]);
-	  #pragma omp target teams distribute parallel for schedule(static, 1) //acc loop
-	  for (j = 1; j < _PB_N - 1; j++)
-	    A[j] = B[j];
-	}
+      for (int t = 0; t < _PB_TSTEPS; t++)
+      {
+        #pragma omp target teams distribute parallel for schedule(static, 1) num_teams(1) thread_limit(1024) //shared(A, B) //acc loop
+        for (int i = 1; i < _PB_N - 1; i++) {
+          //if(i%1000 == 0)
+          //printf("Hello %d\n", i);
+          B[i] = 0.33333 * (A[i-1] + A[i] + A[i + 1]);
+        }
+        #pragma omp target teams distribute parallel for schedule(static, 1) num_teams(1) thread_limit(1024) //shared(A, B) //acc loop
+        for (int j = 1; j < _PB_N - 1; j++)
+          A[j] = B[j];
+      }
     }
   }
-  #pragma endscop
+  //#pragma endscop
 }
 
 
