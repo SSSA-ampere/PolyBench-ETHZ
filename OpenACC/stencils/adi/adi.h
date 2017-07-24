@@ -10,7 +10,7 @@
 
 /* Default to STANDARD_DATASET. */
 # if !defined(MINI_DATASET) && !defined(SMALL_DATASET) && !defined(LARGE_DATASET) && !defined(EXTRALARGE_DATASET)
-#  define STANDARD_DATASET
+#  define LARGE_DATASET
 # endif
 
 /* Do not define anything if the user manually defines the size. */
@@ -33,7 +33,7 @@
 
 #  ifdef LARGE_DATASET
 #   define TSTEPS 50
-#   define N 2000
+#   define N 2048
 #  endif
 
 #  ifdef EXTRALARGE_DATASET
@@ -50,5 +50,7 @@
 #  define DATA_PRINTF_MODIFIER "%0.2lf "
 # endif
 
+// XXX
+#define TSTEPS 1
 
 #endif /* !ADI */

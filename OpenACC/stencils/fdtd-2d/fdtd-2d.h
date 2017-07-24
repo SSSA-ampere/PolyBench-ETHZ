@@ -10,7 +10,7 @@
 
 /* Default to STANDARD_DATASET. */
 # if !defined(MINI_DATASET) && !defined(SMALL_DATASET) && !defined(LARGE_DATASET) && !defined(EXTRALARGE_DATASET)
-#  define STANDARD_DATASET
+#  define LARGE_DATASET
 # endif
 
 /* Do not define anything if the user manually defines the size. */
@@ -30,14 +30,14 @@
 
 #  ifdef STANDARD_DATASET /* Default if unspecified. */
 #   define TMAX 50
-#   define NX 1000
-#   define NY 1000
+#   define NX 1024  // 1000
+#   define NY 1024  // 1000
 #  endif
 
 #  ifdef LARGE_DATASET
 #   define TMAX 50
-#   define NX 2000
-#   define NY 2000
+#   define NX 2048  // 2000
+#   define NY 2048  // 2000
 #  endif
 
 #  ifdef EXTRALARGE_DATASET
@@ -56,5 +56,7 @@
 #  define DATA_PRINTF_MODIFIER "%0.2f "
 # endif
 
+// XXX
+#define TMAX 1
 
 #endif /* !FDTD_2D */

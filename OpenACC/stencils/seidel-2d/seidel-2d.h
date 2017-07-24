@@ -10,7 +10,7 @@
 
 /* Default to STANDARD_DATASET. */
 # if !defined(MINI_DATASET) && !defined(SMALL_DATASET) && !defined(LARGE_DATASET) && !defined(EXTRALARGE_DATASET)
-#  define STANDARD_DATASET
+#  define LARGE_DATASET
 # endif
 
 /* Do not define anything if the user manually defines the size. */
@@ -28,12 +28,12 @@
 
 #  ifdef STANDARD_DATASET /* Default if unspecified. */
 #   define TSTEPS 20
-#   define N 1000
+#   define N 1024
 #  endif
 
 #  ifdef LARGE_DATASET
 #   define TSTEPS 20
-#   define N 2000
+#   define N 2048 //2000
 #  endif
 
 #  ifdef EXTRALARGE_DATASET
@@ -50,5 +50,7 @@
 #  define DATA_PRINTF_MODIFIER "%0.2lf "
 # endif
 
+// XXX 
+#define TSTEPS 1
 
 #endif /* !SEIDEL_2D */

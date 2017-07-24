@@ -65,20 +65,20 @@ void kernel_jacobi_1d_imper(int tsteps,
   //int t, i, j;
 
   //#pragma scop
-  #pragma omp target data map(tofrom: A[0:N]) map(tofrom: B[0:N])  //acc data copy(A) copyin(B)
+  #pragma omp target data map(tofrom: A[0:N]) map(from: B[0:N])  //acc data copy(A) copyin(B)
   {
     //#pragma acc parallel
     {
       for (int t = 0; t < _PB_TSTEPS; t++)
       {
-        #pragma omp target teams distribute parallel for schedule(static, 1) num_teams(1) thread_limit(1024) //shared(A, B) //acc loop
-        for (int i = 1; i < _PB_N - 1; i++) {
+        #pragma omp target teams distribute parallel for schedule(static, 1) num_teams(NUM_TEAMS) thread_limit(NUM_THREADS) //shared(A, B) //acc loop
+        for (int i = 1; i < N - 1; i++) {
           //if(i%1000 == 0)
           //printf("Hello %d\n", i);
           B[i] = 0.33333 * (A[i-1] + A[i] + A[i + 1]);
         }
-        #pragma omp target teams distribute parallel for schedule(static, 1) num_teams(1) thread_limit(1024) //shared(A, B) //acc loop
-        for (int j = 1; j < _PB_N - 1; j++)
+        #pragma omp target teams distribute parallel for schedule(static, 1) num_teams(NUM_TEAMS) thread_limit(NUM_THREADS) //shared(A, B) //acc loop
+        for (int j = 1; j < N - 1; j++)
           A[j] = B[j];
       }
     }

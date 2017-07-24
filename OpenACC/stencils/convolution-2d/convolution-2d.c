@@ -67,10 +67,10 @@ void kernel_conv2d(int ni,
     {
         //#pragma acc parallel
         {
-            #pragma omp target teams distribute parallel for schedule(static, 1) collapse(2) num_teams(1) thread_limit(1024)//acc loop
-            for (i = 1; i < _PB_NI - 1; ++i)
+            #pragma omp target teams distribute parallel for schedule(static, 1) collapse(1) num_teams(NUM_TEAMS) thread_limit(NUM_THREADS)//acc loop
+            for (i = 1; i < NI - 1; ++i)
             //#pragma acc loop
-                for (j = 1; j < _PB_NJ - 1; ++j)
+                for (j = 1; j < NJ - 1; ++j)
                 {
                     B[i][j]
                         =  0.2 * A[i-1][j-1] + 0.5 * A[i-1][j] + -0.8 * A[i-1][j+1]

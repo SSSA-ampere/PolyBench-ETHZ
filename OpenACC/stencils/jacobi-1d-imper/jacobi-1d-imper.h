@@ -50,5 +50,7 @@
 #  define DATA_PRINTF_MODIFIER "%0.2lf "
 # endif
 
+// XXX
+#define TSTEPS 1
 
 #endif /* !JACOBI_1D_IMPER */
