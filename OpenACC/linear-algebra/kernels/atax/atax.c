@@ -64,29 +64,39 @@ void kernel_atax(int nx, int ny,
 {
   int i, j;
 
-  #pragma acc data copyout(y) copyin(A,x) create(tmp)
+  //#pragma acc data copyout(y) copyin(A,x) create(tmp)
+  #pragma omp target data \
+    map(to: A[0:NX], x[0:NY]) \
+    map(alloc: tmp[0:NX]) \
+    map(from: y[0:NX]) 
   {
     /* tmp := A*x */
-    #pragma acc parallel present(tmp,A,x) \
+    //#pragma acc parallel present(tmp,A,x) \
                          num_gangs(nx/100) num_workers(100)
     {
-      #pragma acc loop gang worker
-      for (i = 0; i < _PB_NX; i++) {
+      //#pragma acc loop gang worker
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (i = 0; i < NX; i++) {
         tmp[i] = 0;
-        #pragma acc loop seq
-        for (j = 0; j < _PB_NY; j++)
+        //#pragma acc loop seq
+        for (j = 0; j < NY; j++)
           tmp[i] = tmp[i] + A[i][j] * x[j];
       }
     }
     /* y := t(A)*tmp */
-    #pragma acc parallel present(y,tmp,A) \
+    //#pragma acc parallel present(y,tmp,A) \
                          num_gangs(ny/100) num_workers(100)
     {
-      #pragma acc loop gang worker
-      for (i = 0; i < _PB_NY; i++) {
+      //#pragma acc loop gang worker
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (i = 0; i < NY; i++) {
         y[i] = 0;
-        #pragma acc loop seq
-        for (j = 0; j < _PB_NX; j++)
+        //#pragma acc loop seq
+        for (j = 0; j < NX; j++)
           y[i] = y[i] + A[j][i] * tmp[j];
       }
     }

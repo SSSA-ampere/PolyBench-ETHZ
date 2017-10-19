@@ -80,35 +80,45 @@ void kernel_2mm(int ni, int nj, int nk, int nl,
 {
   int i, j, k;
   /* D := alpha*A*B*C + beta*D */
-  #pragma acc data copyin(A,B,C) create(tmp) copyout (D)
+  //#pragma acc data copyin(A,B,C) create(tmp) copyout (D)
+  #pragma omp target data \
+    map(to: A[0:NI], B[0:NK], C[0:NK]) \
+    map(alloc: tmp[0:NI]) \
+    map(from: D[0:NI])
   {
-    #pragma acc parallel present_or_copyin(A,B) present_or_copyout(A,B,tmp) \
+    //#pragma acc parallel present_or_copyin(A,B) present_or_copyout(A,B,tmp) \
                          num_gangs[0](nj/8) num_gangs[1](ni/8) \
                          num_workers[0](8) num_workers[1](8)
     {
-      #pragma acc loop gang[1] worker[1]
-      for (i = 0; i < _PB_NI; i++) {
-        #pragma acc loop gang[0] worker[0]
-        for (j = 0; j < _PB_NJ; j++) {
+      //#pragma acc loop gang[1] worker[1]
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (i = 0; i < NI; i++) {
+        //#pragma acc loop gang[0] worker[0]
+        for (j = 0; j < NJ; j++) {
           tmp[i][j] = 0;
-          #pragma acc loop seq
-          for (k = 0; k < _PB_NK; ++k)
+          //#pragma acc loop seq
+          for (k = 0; k < NK; ++k)
              tmp[i][j] += alpha * A[i][k] * B[k][j];
         }
       }
     }
 
-    #pragma acc parallel present_or_copyin(C,tmp) present_or_copy(D) \
+    //#pragma acc parallel present_or_copyin(C,tmp) present_or_copy(D) \
                          num_gangs[0](ni/8) num_gangs[1](nl/8) \
                          num_workers[0](8) num_workers[1](8)
     {
-      #pragma acc loop gang[1] worker[1]
-      for (i = 0; i < _PB_NI; i++) {
-        #pragma acc loop gang[0] worker[0]
-        for (j = 0; j < _PB_NL; j++) {
+      //#pragma acc loop gang[1] worker[1]
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (i = 0; i < NI; i++) {
+        //#pragma acc loop gang[0] worker[0]
+        for (j = 0; j < NL; j++) {
           D[i][j] *= beta;
-          #pragma acc loop seq
-          for (k = 0; k < _PB_NJ; ++k)
+          //#pragma acc loop seq
+          for (k = 0; k < NJ; ++k)
             D[i][j] += tmp[i][k] * C[k][j];
         }
       }

@@ -76,52 +76,65 @@ void kernel_3mm(int ni, int nj, int nk, int nl, int nm,
 {
   int i, j, k;
 
-  #pragma acc data copyin(A,B,C,D) create(E,F) copyout(G)
+  //#pragma acc data copyin(A,B,C,D) create(E,F) copyout(G)
+  #pragma omp target data \
+    map(to: A[0:NI], B[0:NK], C[0:NI], D[0:NK]) \
+    map(alloc: E[0:NI], F[0:NK]) \
+    map(from: G[0:NI])
   {
     /* E := A*B */
-    #pragma acc parallel present(E,A,B) \
+    //#pragma acc parallel present(E,A,B) \
                          num_gangs[0](nj/8) num_gangs[1](ni/8) \
                          num_workers[0](8) num_workers[1](8)
     {
-      #pragma acc loop gang[1] worker[1]
-      for (i = 0; i < _PB_NI; i++) {
-        #pragma acc loop gang[0] worker[0]
-        for (j = 0; j < _PB_NJ; j++) {
+      //#pragma acc loop gang[1] worker[1]
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (i = 0; i < NI; i++) {
+        //#pragma acc loop gang[0] worker[0]
+        for (j = 0; j < NJ; j++) {
           E[i][j] = 0;
-          #pragma acc loop seq
-          for (k = 0; k < _PB_NK; ++k)
+          //#pragma acc loop seq
+          for (k = 0; k < NK; ++k)
               E[i][j] += A[i][k] * B[k][j];
         }
       }
     }
     /* F := C*D */
-    #pragma acc parallel present(F,C,D) \
+    //#pragma acc parallel present(F,C,D) \
                          num_gangs[0](nl/8) num_gangs[1](nj/8) \
                          num_workers[0](8) num_workers[1](8)
     {
-      #pragma acc loop gang[1] worker[1]
-      for (i = 0; i < _PB_NJ; i++) {
-        #pragma acc loop gang[0] worker[0]
-        for (j = 0; j < _PB_NL; j++) {
+      //#pragma acc loop gang[1] worker[1]
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (i = 0; i < NJ; i++) {
+        //#pragma acc loop gang[0] worker[0]
+        for (j = 0; j < NL; j++) {
           F[i][j] = 0;
-          #pragma acc loop seq
-          for (k = 0; k < _PB_NM; ++k)
+          //#pragma acc loop seq
+          for (k = 0; k < NM; ++k)
             F[i][j] += C[i][k] * D[k][j];
         }
       }
     }
     /* G := E*F */
-    #pragma acc parallel present(G,E,F) \
+    //#pragma acc parallel present(G,E,F) \
                          num_gangs[0](nl/8) num_gangs[1](ni/8) \
                          num_workers[0](8) num_workers[1](8)
     {
-      #pragma acc loop gang[1] worker[1]
-      for (i = 0; i < _PB_NI; i++) {
-        #pragma acc loop gang[0] worker[0]
-        for (j = 0; j < _PB_NL; j++) {
+      //#pragma acc loop gang[1] worker[1]
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (i = 0; i < NI; i++) {
+        //#pragma acc loop gang[0] worker[0]
+        for (j = 0; j < NL; j++) {
           G[i][j] = 0;
-          #pragma acc loop seq
-          for (k = 0; k < _PB_NJ; ++k)
+          //#pragma acc loop seq
+          for (k = 0; k < NJ; ++k)
             G[i][j] += E[i][k] * F[k][j];
         }
       }

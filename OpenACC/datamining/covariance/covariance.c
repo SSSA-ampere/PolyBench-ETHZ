@@ -75,38 +75,42 @@ void kernel_covariance(int m, int n,
   /* Determine mean of column vectors of input data matrix */
   #pragma omp target data map(to: data[0:N]) map(from: symmat[0:M], mean[0:M])
   {
-      #pragma omp target teams distribute parallel for \
-          schedule(static, 1) firstprivate(float_n) num_teams(1) thread_limit(1024)  private(i, j) //shared(mean, data)
-      for (j = 0; j < _PB_M; j++)
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        firstprivate(float_n) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (j = 0; j < M; j++)
       {
         mean[j] = 0.0;
-        for (i = 0; i < _PB_N; i++)   // XXX PROBLEM: SPM index
+        for (i = 0; i < N; i++)
           mean[j] += data[i][j];
         mean[j] /= float_n;
       }
       
       /* Center the column vectors. */
-      //#pragma omp target teams distribute parallel for \
-      //    schdule(static, 1) NUM_TEAMS THREAD_LIMIT collapse(2) private(i, j) //shared(mean, data)
-      for (i = 0; i < _PB_N; i++)
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (i = 0; i < N; i++)
       {
-        for (j = 0; j < _PB_M; j++)   // XXX Potential problem: collapse vs spm index
-          data[i][j] -= mean[j];      // XXX PROBLEM: Compiler complains about store.
+        for (j = 0; j < M; j++)
+          data[i][j] -= mean[j];
       }
       
       /* Calculate the m * m covariance matrix. */
-      #pragma omp target teams distribute parallel for \
-          schedule(static, 1) NUM_TEAMS THREAD_LIMIT collapse(2) private(i, j1, j2) shared(symmat, data)
-      for (j1 = 0; j1 < _PB_M; j1++)
+      //#pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      /*for (j1 = 0; j1 < M; j1++)
       {
-        for (j2 = j1; j2 < _PB_M; j2++)
+        for (j2 = j1; j2 < M; j2++)
           {
-            symmat[j1][j2] = 0.0;     // XXX PROBLEM: SPM index in inner loop
+            symmat[j1][j2] = 0.0;     // XXX PROBLEM: LB-dep
             for (i = 0; i < _PB_N; i++)
               symmat[j1][j2] += data[i][j1] * data[i][j2];
             symmat[j2][j1] = symmat[j1][j2];
           }
-      }
+      }*/
   }
 }
 
