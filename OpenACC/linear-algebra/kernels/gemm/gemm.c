@@ -73,24 +73,29 @@ void kernel_gemm(int ni, int nj, int nk,
 		 DATA_TYPE POLYBENCH_2D(B,NK,NJ,nk,nj))
 {
   int i, j, k;
-  #pragma scop
-  #pragma acc data copyin(A,B) copy(C)
+  //#pragma scop
+  //#pragma acc data copyin(A,B) copy(C)
+  #pragma omp target data map(tofrom: C[0:NI]) map(to: A[0:NI], B[0:NK])
   {
-    #pragma acc parallel
+    //#pragma acc parallel
     {
       /* C := alpha*A*B + beta*C */
-      #pragma acc loop
-      for (i = 0; i < _PB_NI; i++)
-	#pragma acc loop
-	for (j = 0; j < _PB_NJ; j++)
-	  {
-	    C[i][j] *= beta;
-	    for (k = 0; k < _PB_NK; ++k)
-	      C[i][j] += alpha * A[i][k] * B[k][j];
-	  }
+      //#pragma acc loop
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+        for (i = 0; i < NI; i++)
+            for (j = 0; j < NJ; j++)
+            {
+                C[i][j] *= beta;
+                for (k = 0; k < NK; ++k)
+                    C[i][j] += alpha * A[i][k] * B[k][j];
+            }
     }
   }
-  #pragma endscop
+  //#pragma endscop
+
+  printf("C[4][2] = %f\n", C[4][2]);
 }
 
 

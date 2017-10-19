@@ -13,9 +13,6 @@
 //#define DATA_TYPE float
 //#define DATA_PRINTF_MODIFIER "%0.2f "
 
-#define NUM_TEAMS 
-#define THREAD_LIMIT
-
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
@@ -74,33 +71,37 @@ void kernel_covariance(int m, int n,
 {
   int i, j, j1, j2;
   
+
   /* Determine mean of column vectors of input data matrix */
-  #pragma omp target data map(to: data) map(from: symmat)
+  #pragma omp target data map(to: data[0:N]) map(from: symmat[0:M], mean[0:M])
   {
-      #pragma omp target teams distribute parallel for NUM_TEAMS THREAD_LIMIT private(i, j) shared(mean, data)
+      #pragma omp target teams distribute parallel for \
+          schedule(static, 1) firstprivate(float_n) num_teams(1) thread_limit(1024)  private(i, j) //shared(mean, data)
       for (j = 0; j < _PB_M; j++)
       {
         mean[j] = 0.0;
-        for (i = 0; i < _PB_N; i++)
+        for (i = 0; i < _PB_N; i++)   // XXX PROBLEM: SPM index
           mean[j] += data[i][j];
         mean[j] /= float_n;
       }
       
       /* Center the column vectors. */
-      #pragma omp target teams distribute parallel for NUM_TEAMS THREAD_LIMIT collapse(2) private(i, j) shared(mean, data)
+      //#pragma omp target teams distribute parallel for \
+      //    schdule(static, 1) NUM_TEAMS THREAD_LIMIT collapse(2) private(i, j) //shared(mean, data)
       for (i = 0; i < _PB_N; i++)
       {
-        for (j = 0; j < _PB_M; j++)
-          data[i][j] -= mean[j];
+        for (j = 0; j < _PB_M; j++)   // XXX Potential problem: collapse vs spm index
+          data[i][j] -= mean[j];      // XXX PROBLEM: Compiler complains about store.
       }
       
       /* Calculate the m * m covariance matrix. */
-      #pragma omp target teams distribute parallel for NUM_TEAMS THREAD_LIMIT collapse(2) private(i, j1, j2) shared(symmat, data)
+      #pragma omp target teams distribute parallel for \
+          schedule(static, 1) NUM_TEAMS THREAD_LIMIT collapse(2) private(i, j1, j2) shared(symmat, data)
       for (j1 = 0; j1 < _PB_M; j1++)
       {
         for (j2 = j1; j2 < _PB_M; j2++)
           {
-            symmat[j1][j2] = 0.0;
+            symmat[j1][j2] = 0.0;     // XXX PROBLEM: SPM index in inner loop
             for (i = 0; i < _PB_N; i++)
               symmat[j1][j2] += data[i][j1] * data[i][j2];
             symmat[j2][j1] = symmat[j1][j2];

@@ -13,8 +13,8 @@
 //#define DATA_TYPE long
 //#define DATA_PRINTF_MODIFIER "%ld "
 
-#define NUM_TEAMS 
-#define THREAD_LIMIT
+#define NUM_TEAMS  num_teams(1)
+#define THREAD_LIMIT thread_limit(1024)
 
 #include <stdio.h>
 #include <unistd.h>
@@ -77,17 +77,20 @@ void kernel_reg_detect(int niter, int maxgrid, int length,
 {
   int t, i, j, cnt;
 
-  #pragma omp target data map(tofrom: path) map(to: sum_tang, mean) 
+  #pragma omp target data map(tofrom: path[0:MAXGRID]) map(to: sum_tang[0:MAXGRID], mean[0:MAXGRID]) map(tofrom: diff[0:MAXGRID], sum_diff[0:MAXGRID])
   {
     for (t = 0; t < _PB_NITER; t++)
     {
-      #pragma omp target teams distribute parallel for NUM_TEAMS THREAD_LIMIT private(i, j, cnt) shared(diff, sum_tang)
-      for (j = 0; j <= _PB_MAXGRID - 1; j++)
-        for (i = j; i <= _PB_MAXGRID - 1; i++)
-          for (cnt = 0; cnt <= _PB_LENGTH - 1; cnt++)
+      //#pragma omp target teams distribute parallel for schedule(static, 1) NUM_TEAMS THREAD_LIMIT collapse(3) private(i, j, cnt) shared(diff, sum_tang)
+      for (j = 0; j <= _PB_MAXGRID - 1; j++) {
+        for (i = j; i <= _PB_MAXGRID - 1; i++) {
+          for (cnt = 0; cnt <= _PB_LENGTH - 1; cnt++) {
             diff[j][i][cnt] = sum_tang[j][i];
+          }
+        }
+      }
 
-      #pragma omp target teams distribute parallel for NUM_TEAMS THREAD_LIMIT private(i, j, cnt) shared(diff, sum_diff, mean)
+      //#pragma omp target teams distribute parallel for schedule(static, 1) NUM_TEAMS THREAD_LIMIT private(i, j, cnt) shared(diff, sum_diff, mean)
       for (j = 0; j <= _PB_MAXGRID - 1; j++)
       {
         for (i = j; i <= _PB_MAXGRID - 1; i++)
@@ -99,11 +102,11 @@ void kernel_reg_detect(int niter, int maxgrid, int length,
         }
       }
       
-      #pragma omp target teams distribute parallel for NUM_TEAMS THREAD_LIMIT private(i) shared(mean, path)
+      #pragma omp target teams distribute parallel for schedule(static, 1) NUM_TEAMS THREAD_LIMIT private(i) shared(mean, path)
       for (i = 0; i <= _PB_MAXGRID - 1; i++)
         path[0][i] = mean[0][i];
 
-      #pragma omp target teams distribute parallel for NUM_TEAMS THREAD_LIMIT private(i, j) shared(mean, path)
+      //#pragma omp target teams distribute parallel for schedule(static, 1) collapse(2) NUM_TEAMS THREAD_LIMIT private(i, j) shared(mean, path)
       for (j = 1; j <= _PB_MAXGRID - 1; j++)
         for (i = j; i <= _PB_MAXGRID - 1; i++)
           path[j][i] = path[j - 1][i - 1] + mean[j][i];

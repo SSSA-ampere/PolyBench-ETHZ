@@ -13,8 +13,8 @@
 //#define DATA_TYPE float
 //#define DATA_PRINTF_MODIFIER "%0.2f "
 
-#define NUM_TEAMS 
-#define THREAD_LIMIT 
+#define NUM_TEAMS  num_teams(1)
+#define THREAD_LIMIT thread_limit(1024)
 
 #include <stdio.h>
 #include <unistd.h>
@@ -74,61 +74,61 @@ void kernel_correlation(int m, int n,
       DATA_TYPE POLYBENCH_1D(mean,M,m),
       DATA_TYPE POLYBENCH_1D(stddev,M,m))
 {
-  int i, j, j1, j2;
 
   DATA_TYPE eps = 0.1f;
 
 #define sqrt_of_array_cell(x,j) sqrt(x[j])
 
-  #pragma omp target data map(to: data) map(from: symmat)
+  #pragma omp target data map(to: data[0:M]) map(tofrom: symmat[0:M], mean[0:M], stddev[0:M])
   {
     /* Determine mean of column vectors of input data matrix */
-    #pragma omp target teams distribute parallel for NUM_TEAMS THREAD_LIMIT private(i, j) shared(mean, data)
-    for (j = 0; j < _PB_M; j++)
+    #pragma omp target teams distribute parallel for schedule(static, 1) firstprivate(float_n) NUM_TEAMS THREAD_LIMIT //shared(mean, data)
+    for (int j = 0; j < _PB_M; j++)
     {
       mean[j] = 0.0;
-      for (i = 0; i < _PB_N; i++)
+      for (int i = 0; i < _PB_N; i++)
         mean[j] += data[i][j];
       mean[j] /= float_n;
     }
       
     /* Determine standard deviations of column vectors of data matrix. */
-    #pragma omp target teams distribute parallel for NUM_TEAMS THREAD_LIMIT private(i, j) shared(stddev, mean, data)
-    for (j = 0; j < _PB_M; j++)
+    //#pragma omp target teams distribute parallel for schedule(static, 1) firstprivate(eps, float_n) NUM_TEAMS THREAD_LIMIT //shared(stddev, mean, data)
+    for (int j = 0; j < _PB_M; j++)
     {
       stddev[j] = 0.0;
-      for (i = 0; i < _PB_N; i++)
+      for (int i = 0; i < _PB_N; i++)
         stddev[j] += (data[i][j] - mean[j]) * (data[i][j] - mean[j]);
       stddev[j] /= float_n;
       stddev[j] = sqrt_of_array_cell(stddev, j);
       /* The following in an inelegant but usual way to handle
          near-zero std. dev. values, which below would cause a zero-
          divide. */
-      stddev[j] = stddev[j] <= eps ? 1.0 : stddev[j];
+      stddev[j] = stddev[j] <= eps ? 1.0 : stddev[j]; // XXX PROBLEM: Control flow based on data.
     }
   
     /* Center and reduce the column vectors. */
-    #pragma omp target teams distribute parallel for collapse(2) NUM_TEAMS THREAD_LIMIT private(i, j) shared(stddev, mean, data)
-    for (i = 0; i < _PB_N; i++)
+    //#pragma omp target teams distribute parallel for schedule(static, 1) firstprivate(float_n) collapse(2) NUM_TEAMS THREAD_LIMIT //shared(stddev, mean, data)
+    for (int i = 0; i < _PB_N; i++)
     {
-      for (j = 0; j < _PB_M; j++)
+      for (int j = 0; j < _PB_M; j++)
       {
         data[i][j] -= mean[j];
-        data[i][j] /= sqrt(float_n) * stddev[j];
+        data[i][j] /= sqrt(float_n) * stddev[j];      // XXX PROBLEM: Unknown. Probably because we use array again.
       }
     }
 
     /* Calculate the m * m correlation matrix. */
-    #pragma omp target teams distribute parallel for NUM_TEAMS THREAD_LIMIT private(i, j1, j2) shared(symmat, mean, data)
-    for (j1 = 0; j1 < _PB_M-1; j1++)
+    #pragma omp target teams distribute parallel for schedule(static,1) \
+        NUM_TEAMS THREAD_LIMIT //shared(symmat, mean, data)
+    for (int j1 = 0; j1 < _PB_M-1; j1++)
     {
       symmat[j1][j1] = 1.0;
-      for (j2 = j1+1; j2 < _PB_M; j2++)
+      for (int j2 = j1+1; j2 < _PB_M; j2++)
         {
           symmat[j1][j2] = 0.0;
-          for (i = 0; i < _PB_N; i++)
+          for (int i = 0; i < _PB_N; i++)
             symmat[j1][j2] += (data[i][j1] * data[i][j2]);
-          symmat[j2][j1] = symmat[j1][j2];
+          symmat[j2][j1] = symmat[j1][j2];            // XXX PROBLEM: Unknown. Probably because we use array again.
         }
     }
   }

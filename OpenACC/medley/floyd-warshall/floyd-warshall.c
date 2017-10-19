@@ -13,8 +13,8 @@
 //#define DATA_TYPE float
 //#define DATA_PRINTF_MODIFIER "%0.2f "
 
-#define NUM_TEAMS 
-#define THREAD_LIMIT
+#define NUM_TEAMS num_teams(1)
+#define THREAD_LIMIT thread_limit(1024)
 
 #include <stdio.h>
 #include <unistd.h>
@@ -67,7 +67,7 @@ void kernel_floyd_warshall(int n,
      DATA_TYPE POLYBENCH_2D(path,N,N,n,n))
 {
   int i, j, k;
-  #pragma omp target data map(tofrom: path)
+  #pragma omp target data map(tofrom: path[0:N])
   {
     #pragma omp target teams distribute parallel for NUM_TEAMS THREAD_LIMIT private(i, j, k) shared(path)
     for (k = 0; k < _PB_N; k++)

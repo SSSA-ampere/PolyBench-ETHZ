@@ -18,5 +18,11 @@
 
 # Temp Files
 *~
+*.bc
+*.s
+*.i
+*.ll
+*.lk
+a.out-openmp-nvptx64-nvidia-cuda
 #*#
 

@@ -8,6 +8,8 @@
 #ifndef REG_DETECT_H
 # define REG_DETECT_H
 
+#define EXTRALARGE_DATASET
+
 /* Default to STANDARD_DATASET. */
 # if !defined(MINI_DATASET) && !defined(SMALL_DATASET) && !defined(LARGE_DATASET) && !defined(EXTRALARGE_DATASET)
 #  define STANDARD_DATASET
@@ -50,6 +52,8 @@
 # define _PB_NITER POLYBENCH_LOOP_BOUND(NITER,niter)
 # define _PB_LENGTH POLYBENCH_LOOP_BOUND(LENGTH,length)
 # define _PB_MAXGRID POLYBENCH_LOOP_BOUND(MAXGRID,maxgrid)
+
+#define NITER 1
 
 # ifndef DATA_TYPE
 #  define DATA_TYPE int
