@@ -26,3 +26,5 @@
 a.out-openmp-nvptx64-nvidia-cuda
 #*#
 
+*.swp
+*.swo
