@@ -73,27 +73,34 @@ void kernel_gesummv(int n,
 		    DATA_TYPE POLYBENCH_1D(y,N,n))
 {
   int i, j;
-  #pragma scop
-  #pragma acc data copyin(A,B,x) create(tmp) copyout(y)
+  //#pragma scop
+  //#pragma acc data copyin(A,B,x) create(tmp) copyout(y)
+  #pragma omp target data \
+    map(to: A[0:N], B[0:N], x[0:N]) \
+    map(alloc: tmp[0:N]) \
+    map(from: y[0:N])
   {
-    #pragma acc parallel
+    //#pragma acc parallel
     {
-      #pragma acc loop
-      for (i = 0; i < _PB_N; i++)
-	{
-	  tmp[i] = 0;
-	  y[i] = 0;
-	  #pragma acc loop
-	  for (j = 0; j < _PB_N; j++)
-	    {
-	      tmp[i] = A[i][j] * x[j] + tmp[i];
-	      y[i] = B[i][j] * x[j] + y[i];
-	    }
-	  y[i] = alpha * tmp[i] + beta * y[i];
-	}
+      //#pragma acc loop
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (i = 0; i < N; i++)
+      {
+        tmp[i] = 0;
+        y[i] = 0;
+        //#pragma acc loop
+        for (j = 0; j < N; j++)
+        {
+          tmp[i] = A[i][j] * x[j] + tmp[i];
+          y[i] = B[i][j] * x[j] + y[i];
+        }
+        y[i] = alpha * tmp[i] + beta * y[i];
+      }
     }
   }
-  #pragma endscop
+  //#pragma endscop
 }
 
 

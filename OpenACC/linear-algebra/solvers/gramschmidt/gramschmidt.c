@@ -79,34 +79,37 @@ void kernel_gramschmidt(int ni, int nj,
 			DATA_TYPE POLYBENCH_2D(R,NJ,NJ,nj,nj),
 			DATA_TYPE POLYBENCH_2D(Q,NI,NJ,ni,nj))
 {
-  int i, j, k;
 
-  DATA_TYPE nrm;
-  #pragma scop
-  #pragma acc data copy(A,Q,R)
+  //#pragma scop
+  //#pragma acc data copy(A,Q,R)
+  #pragma omp target data \
+    map(tofrom: A[0:NI], Q[0:NI], R[0:NI])
   {
-    #pragma acc parallel
+    //#pragma acc parallel
     {
-      for (k = 0; k < _PB_NJ; k++)
-	{
-	  nrm = 0;
-	  for (i = 0; i < _PB_NI; i++)
-	    nrm += A[i][k] * A[i][k];
-	  R[k][k] = sqrt(nrm);
-	  for (i = 0; i < _PB_NI; i++)
-	    Q[i][k] = A[i][k] / R[k][k];
-	  for (j = k + 1; j < _PB_NJ; j++)
-	    {
-	      R[k][j] = 0;
-	      for (i = 0; i < _PB_NI; i++)
-		R[k][j] += Q[i][k] * A[i][j];
-	      for (i = 0; i < _PB_NI; i++)
-		A[i][j] = A[i][j] - Q[i][k] * R[k][j];
-	    }
-	}
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (int k = 0; k < NJ; k++)
+      {
+        DATA_TYPE nrm = 0;
+        for (int i = 0; i < NI; i++)
+          nrm += A[i][k] * A[i][k];
+        R[k][k] = sqrt(nrm);
+        for (int i = 0; i < NI; i++)
+          Q[i][k] = A[i][k] / R[k][k];
+        for (int j = k + 1; j < NJ; j++)
+        {
+          R[k][j] = 0;
+          for (int i = 0; i < NI; i++)
+            R[k][j] += Q[i][k] * A[i][j];
+          for (int i = 0; i < NI; i++)
+            A[i][j] = A[i][j] - Q[i][k] * R[k][j];
+        }
+      }
     }
   }
-  #pragma endscop
+  //#pragma endscop
 }
 
 

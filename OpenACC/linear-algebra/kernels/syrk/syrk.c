@@ -67,27 +67,36 @@ void kernel_syrk(int ni, int nj,
 		 DATA_TYPE POLYBENCH_2D(C,NI,NI,ni,ni),
 		 DATA_TYPE POLYBENCH_2D(A,NI,NJ,ni,nj))
 {
-  int i, j, k;
-  #pragma scop
-  #pragma acc data copyin(A) copy(C)
+  //#pragma scop
+  //#pragma acc data copyin(A) copy(C)
+  #pragma omp target data \
+    map(tofrom: C[0:NI]) \
+    map(to: A[0:NI])
   {
-    #pragma acc parallel
+    //#pragma acc parallel
     {
       /*  C := alpha*A*A' + beta*C */
-      #pragma acc loop
-      for (i = 0; i < _PB_NI; i++)
-	#pragma acc loop
-	for (j = 0; j < _PB_NI; j++)
-	  C[i][j] *= beta;
-      #pragma acc loop
-      for (i = 0; i < _PB_NI; i++)
-	for (j = 0; j < _PB_NI; j++)
-	  #pragma acc loop
-	  for (k = 0; k < _PB_NJ; k++)
-	    C[i][j] += alpha * A[i][k] * A[j][k];
+      //#pragma acc loop
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (int j = 0; j < NI; j++)
+        for (int i = 0; i < NI; i++)
+        //#pragma acc loop
+          C[i][j] *= beta;
+      
+      //#pragma acc loop
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (int j = 0; j < NI; j++)
+        for (int i = 0; i < NI; i++)
+          //#pragma acc loop
+          for (int k = 0; k < NJ; k++)
+            C[i][j] += alpha * A[i][k] * A[j][k];
     }
   }
-  #pragma endscop
+  //#pragma endscop
 }
 
 

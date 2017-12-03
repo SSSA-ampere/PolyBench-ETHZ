@@ -87,33 +87,59 @@ void kernel_gemver(int n,
 		   DATA_TYPE POLYBENCH_1D(y,N,n),
 		   DATA_TYPE POLYBENCH_1D(z,N,n))
 {
-  int i, j;
-  #pragma scop
-  #pragma acc data copy(w) copyin(A,x,u1,v1,u2,v2,y,z)
+  //#pragma scop
+  //#pragma acc data copy(w) copyin(A,x,u1,v1,u2,v2,y,z)
+  #pragma omp target data \
+    map(tofrom: w[0:N]) \
+    map(to: A[0:N], x[0:N], u1[0:N], v1[0:N], u2[0:N], v2[0:N], y[0:N], z[0:N])
   {
-    #pragma acc parallel
+    //#pragma acc parallel
     {
-      #pragma acc loop
-      for (i = 0; i < _PB_N; i++)
-	#pragma acc loop
-	for (j = 0; j < _PB_N; j++)
-	  A[i][j] = A[i][j] + u1[i] * v1[j] + u2[i] * v2[j];
-      #pragma acc loop
-      for (i = 0; i < _PB_N; i++)
-	#pragma acc loop
-	for (j = 0; j < _PB_N; j++)
-	  x[i] = x[i] + beta * A[j][i] * y[j];
-      #pragma acc loop
-      for (i = 0; i < _PB_N; i++)
-	x[i] = x[i] + z[i];
-      #pragma acc loop
-      for (i = 0; i < _PB_N; i++)
-	#pragma acc loop
-	for (j = 0; j < _PB_N; j++)
-	  w[i] = w[i] +  alpha * A[i][j] * x[j];
+
+      //#pragma acc loop
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (int i = 0; i < N; i++) {
+        //#pragma acc loop
+        for (int j = 0; j < N; j++) {
+          A[i][j] = A[i][j] + u1[i] * v1[j] + u2[i] * v2[j];
+        }
+      }
+
+      //#pragma acc loop
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (int i = 0; i < N; i++) {
+      //#pragma acc loop
+        for (int j = 0; j < N; j++) {
+          x[i] = x[i] + beta * A[j][i] * y[j];
+        }
+      }
+
+      //#pragma acc loop
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (int i = 0; i < N; i++) {
+        x[i] = x[i] + z[i];
+      }
+
+      //#pragma acc loop
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (int i = 0; i < N; i++) {
+        //#pragma acc loop
+        for (int j = 0; j < N; j++) {
+          w[i] = w[i] +  alpha * A[i][j] * x[j];
+        }
+      }
+
     }
   }
-  #pragma endscop
+  //#pragma endscop
 }
 
 

@@ -13,9 +13,6 @@
 //#define DATA_TYPE long
 //#define DATA_PRINTF_MODIFIER "%ld "
 
-#define NUM_TEAMS  num_teams(1)
-#define THREAD_LIMIT thread_limit(1024)
-
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
@@ -75,40 +72,53 @@ void kernel_reg_detect(int niter, int maxgrid, int length,
            DATA_TYPE POLYBENCH_3D(diff,MAXGRID,MAXGRID,LENGTH,maxgrid,maxgrid,length),
            DATA_TYPE POLYBENCH_3D(sum_diff,MAXGRID,MAXGRID,LENGTH,maxgrid,maxgrid,length))
 {
-  int t, i, j, cnt;
 
-  #pragma omp target data map(tofrom: path[0:MAXGRID]) map(to: sum_tang[0:MAXGRID], mean[0:MAXGRID]) map(tofrom: diff[0:MAXGRID], sum_diff[0:MAXGRID])
+  #pragma omp target data \
+    map(tofrom: path[0:MAXGRID]) \
+    map(to: sum_tang[0:MAXGRID], mean[0:MAXGRID]) map(tofrom: diff[0:MAXGRID], sum_diff[0:MAXGRID])
   {
-    for (t = 0; t < _PB_NITER; t++)
+    for (int t = 0; t < NITER; t++)
     {
-      //#pragma omp target teams distribute parallel for schedule(static, 1) NUM_TEAMS THREAD_LIMIT collapse(3) private(i, j, cnt) shared(diff, sum_tang)
-      for (j = 0; j <= _PB_MAXGRID - 1; j++) {
-        for (i = j; i <= _PB_MAXGRID - 1; i++) {
-          for (cnt = 0; cnt <= _PB_LENGTH - 1; cnt++) {
+
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (int j = 0; j <= MAXGRID - 1; j++) {
+        for (int i = j; i <= MAXGRID - 1; i++) {
+          for (int cnt = 0; cnt <= LENGTH - 1; cnt++) {
             diff[j][i][cnt] = sum_tang[j][i];
           }
         }
       }
 
-      //#pragma omp target teams distribute parallel for schedule(static, 1) NUM_TEAMS THREAD_LIMIT private(i, j, cnt) shared(diff, sum_diff, mean)
-      for (j = 0; j <= _PB_MAXGRID - 1; j++)
-      {
-        for (i = j; i <= _PB_MAXGRID - 1; i++)
-        {
-          sum_diff[j][i][0] = diff[j][i][0];
-          for (cnt = 1; cnt <= _PB_LENGTH - 1; cnt++)
-            sum_diff[j][i][cnt] = sum_diff[j][i][cnt - 1] + diff[j][i][cnt];
-          mean[j][i] = sum_diff[j][i][_PB_LENGTH - 1];
-        }
-      }
-      
-      #pragma omp target teams distribute parallel for schedule(static, 1) NUM_TEAMS THREAD_LIMIT private(i) shared(mean, path)
-      for (i = 0; i <= _PB_MAXGRID - 1; i++)
-        path[0][i] = mean[0][i];
+      // TODO: Too much memory use
+      //#pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      //for (int j = 0; j <= MAXGRID - 1; j++)
+      //{
+      //  for (int i = j; i <= MAXGRID - 1; i++)
+      //  {
+      //    sum_diff[j][i][0] = diff[j][i][0];
+      //    for (int cnt = 1; cnt <= LENGTH - 1; cnt++)
+      //      sum_diff[j][i][cnt] = sum_diff[j][i][cnt - 1] + diff[j][i][cnt];
+      //    mean[j][i] = sum_diff[j][i][LENGTH - 1];
+      //  }
+      //}
 
-      //#pragma omp target teams distribute parallel for schedule(static, 1) collapse(2) NUM_TEAMS THREAD_LIMIT private(i, j) shared(mean, path)
-      for (j = 1; j <= _PB_MAXGRID - 1; j++)
-        for (i = j; i <= _PB_MAXGRID - 1; i++)
+      // TODO: Too much memory use, but also: Error in WarpSpec
+      //#pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      //for (int i = 0; i <= MAXGRID - 1; i++) {
+      //  path[0][i] = mean[0][i];
+      //}
+
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (int j = 1; j <= MAXGRID - 1; j++)
+        for (int i = j; i <= MAXGRID - 1; i++)
           path[j][i] = path[j - 1][i - 1] + mean[j][i];
     }
   }

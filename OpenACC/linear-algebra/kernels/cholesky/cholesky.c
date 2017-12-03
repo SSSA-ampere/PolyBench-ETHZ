@@ -61,34 +61,37 @@ void kernel_cholesky(int n,
 		     DATA_TYPE POLYBENCH_1D(p,N,n),
 		     DATA_TYPE POLYBENCH_2D(A,N,N,n,n))
 {
-  int i, j, k;
-
-  DATA_TYPE x;
-  #pragma scop
-  #pragma acc data copy(A) copyin (p)
+  //#pragma scop
+  //#pragma acc data copy(A) copyin (p)
+  #pragma omp target data \
+    map(tofrom: A[0:N]) \
+    map(to: p[0:N])
   {
-    #pragma acc parallel
+    //#pragma acc parallel
     {
-      #pragma acc loop
-      for (i = 0; i < _PB_N; ++i)
-	{
-	  x = A[i][i];
-	  #pragma acc loop
-	  for (j = 0; j <= i - 1; ++j)
-	    x = x - A[i][j] * A[i][j];
-	  p[i] = 1.0 / sqrt(x);
-	  for (j = i + 1; j < _PB_N; ++j)
-	    {
-	      x = A[i][j];
-	      #pragma acc loop
-	      for (k = 0; k <= i - 1; ++k)
-		x = x - A[j][k] * A[i][k];
-	      A[j][i] = x * p[i];
-	    }
-	}
+      //#pragma acc loop
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (int i = 0; i < N; ++i)
+      {
+        DATA_TYPE x = A[i][i];
+        //#pragma acc loop
+        for (int j = 0; j <= i - 1; ++j)
+          x = x - A[i][j] * A[i][j];
+        p[i] = 1.0 / sqrt(x);
+        for (int j = i + 1; j < N; ++j)
+        {
+          x = A[i][j];
+          //#pragma acc loop
+          for (int k = 0; k <= i - 1; ++k)
+            x = x - A[j][k] * A[i][k];
+          A[j][i] = x * p[i];
+        }
+      }
     }
   }
-  #pragma endscop
+  //#pragma endscop
 }
 
 

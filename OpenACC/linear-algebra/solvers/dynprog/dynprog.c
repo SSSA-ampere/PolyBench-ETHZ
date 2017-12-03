@@ -54,39 +54,49 @@ void kernel_dynprog(int tsteps, int length,
 		    DATA_TYPE POLYBENCH_3D(sum_c,LENGTH,LENGTH,LENGTH,length,length,length),
 		    DATA_TYPE *out)
 {
-  int iter, i, j, k;
 
   DATA_TYPE out_l = 0;
   
-  #pragma scop
-  #pragma acc data create(sum_c) copyin(W,c)
+  //#pragma scop
+  //#pragma acc data create(sum_c) copyin(W,c)
+  #pragma omp target data \
+    map(to: W[0:LENGTH], c[0:LENGTH]) \
+    map(alloc: sum_c[0:LENGTH])
   {
-    #pragma acc parallel
+    //#pragma acc parallel
     {
-      #pragma acc loop
-      for (iter = 0; iter < _PB_TSTEPS; iter++)
-	{
-	  for (i = 0; i <= _PB_LENGTH - 1; i++)
-	    #pragma acc loop
-	    for (j = 0; j <= _PB_LENGTH - 1; j++)
-	      c[i][j] = 0;
-	  #pragma acc loop
-	  for (i = 0; i <= _PB_LENGTH - 2; i++)
-	    {
-              #pragma acc loop
-	      for (j = i + 1; j <= _PB_LENGTH - 1; j++)
-		{
-		  sum_c[i][j][i] = 0;
-		  for (k = i + 1; k <= j-1; k++)
-		    sum_c[i][j][k] = sum_c[i][j][k - 1] + c[i][k] + c[k][j];
-		  c[i][j] = sum_c[i][j][j-1] + W[i][j];
-		}
-	    }
-	  out_l += c[0][_PB_LENGTH - 1];
-	}
+      //#pragma acc loop
+      for (int iter = 0; iter < TSTEPS; iter++)
+      {
+        #pragma omp target teams distribute parallel for schedule(static, 1) \
+          num_teams(NUM_TEAMS) \
+          num_threads(NUM_THREADS)
+        for (int i = 0; i <= LENGTH - 1; i++)
+          //#pragma acc loop
+          for (int j = 0; j <= LENGTH - 1; j++)
+            c[i][j] = 0;
+        //#pragma acc loop
+
+        #pragma omp target teams distribute parallel for schedule(static, 1) \
+          shared(out_l) \
+          num_teams(NUM_TEAMS) \
+          num_threads(NUM_THREADS)
+        for (int i = 0; i <= LENGTH - 2; i++)
+        {
+          //#pragma acc loop
+          for (int j = i + 1; j <= LENGTH - 1; j++)
+          {
+            sum_c[i][j][i] = 0;
+            for (int k = i + 1; k <= j-1; k++)
+              sum_c[i][j][k] = sum_c[i][j][k - 1] + c[i][k] + c[k][j];
+            c[i][j] = sum_c[i][j][j-1] + W[i][j];
+          }
+        }
+        out_l += c[0][LENGTH - 1];
+      }
     }
   }
-  #pragma endscop
+  //#pragma endscop
   *out = out_l;
 }
 

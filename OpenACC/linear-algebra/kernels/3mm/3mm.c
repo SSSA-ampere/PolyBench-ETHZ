@@ -91,9 +91,9 @@ void kernel_3mm(int ni, int nj, int nk, int nl, int nm,
       #pragma omp target teams distribute parallel for schedule(static, 1) \
         num_teams(NUM_TEAMS) \
         num_threads(NUM_THREADS)
-      for (i = 0; i < NI; i++) {
+      for (j = 0; j < NJ; j++) {
         //#pragma acc loop gang[0] worker[0]
-        for (j = 0; j < NJ; j++) {
+        for (i = 0; i < NJ; i++) {
           E[i][j] = 0;
           //#pragma acc loop seq
           for (k = 0; k < NK; ++k)
@@ -110,9 +110,9 @@ void kernel_3mm(int ni, int nj, int nk, int nl, int nm,
       #pragma omp target teams distribute parallel for schedule(static, 1) \
         num_teams(NUM_TEAMS) \
         num_threads(NUM_THREADS)
-      for (i = 0; i < NJ; i++) {
+      for (j = 0; j < NL; j++) {
+        for (i = 0; i < NJ; i++) {
         //#pragma acc loop gang[0] worker[0]
-        for (j = 0; j < NL; j++) {
           F[i][j] = 0;
           //#pragma acc loop seq
           for (k = 0; k < NM; ++k)
@@ -129,9 +129,9 @@ void kernel_3mm(int ni, int nj, int nk, int nl, int nm,
       #pragma omp target teams distribute parallel for schedule(static, 1) \
         num_teams(NUM_TEAMS) \
         num_threads(NUM_THREADS)
-      for (i = 0; i < NI; i++) {
+      for (j = 0; j < NL; j++) {
+        for (i = 0; i < NI; i++) {
         //#pragma acc loop gang[0] worker[0]
-        for (j = 0; j < NL; j++) {
           G[i][j] = 0;
           //#pragma acc loop seq
           for (k = 0; k < NJ; ++k)

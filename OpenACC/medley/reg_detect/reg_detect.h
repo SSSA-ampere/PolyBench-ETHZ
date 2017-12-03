@@ -53,6 +53,7 @@
 # define _PB_LENGTH POLYBENCH_LOOP_BOUND(LENGTH,length)
 # define _PB_MAXGRID POLYBENCH_LOOP_BOUND(MAXGRID,maxgrid)
 
+#undef NITER
 #define NITER 1
 
 # ifndef DATA_TYPE

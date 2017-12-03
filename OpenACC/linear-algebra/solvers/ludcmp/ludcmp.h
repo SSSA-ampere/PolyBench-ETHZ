@@ -40,7 +40,7 @@
 # define _PB_N POLYBENCH_LOOP_BOUND(N,n)
 
 # ifndef DATA_TYPE
-#  define DATA_TYPE double
+#  define DATA_TYPE float
 #  define DATA_PRINTF_MODIFIER "%0.2lf "
 # endif
 

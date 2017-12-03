@@ -42,6 +42,9 @@
 #  endif
 # endif /* !N */
 
+#undef TSTEPS
+#define TSTEPS 1
+
 # define _PB_TSTEPS POLYBENCH_LOOP_BOUND(TSTEPS,tsteps)
 # define _PB_LENGTH POLYBENCH_LOOP_BOUND(LENGTH,length)
 

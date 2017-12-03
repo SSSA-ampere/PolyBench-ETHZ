@@ -25,11 +25,10 @@ static
 void init_array (int ni, int nj, int nk,
 		 DATA_TYPE POLYBENCH_3D(A,NI,NJ,NK,ni,nj,nk))
 {
-  int i, j, k;
 
-  for (i = 0; i < ni; i++)
-    for (j = 0; j < nj; j++)
-      for (k = 0; j < nk; k++)
+  for (int i = 0; i < ni; i++)
+    for (int j = 0; j < nj; j++)
+      for (int k = 0; k < nk; k++)
 	{
 	  A[i][j][k] = i % 12 + 2 * (j % 7) + 3 * (k % 13);
 	}
@@ -43,11 +42,10 @@ void print_array(int ni, int nj, int nk,
 		 DATA_TYPE POLYBENCH_3D(B,NI,NJ,NK,ni,nj,nk))
 
 {
-  int i, j, k;
 
-  for (i = 0; i < ni; i++)
-    for (j = 0; j < nj; j++)
-      for (k = 0; j < nk; k++) {
+  for (int i = 0; i < ni; i++)
+    for (int j = 0; j < nj; j++)
+      for (int k = 0; k < nk; k++) {
 	fprintf(stderr, DATA_PRINTF_MODIFIER, B[i][j][k]);
 	if (((i * NJ + j) * NK + k) % 20 == 0) fprintf(stderr, "\n");
       }
@@ -64,19 +62,22 @@ void kernel_conv2d(int ni,
 		   DATA_TYPE POLYBENCH_3D(A,NI,NJ,NK,ni,nj,nk),
 		   DATA_TYPE POLYBENCH_3D(B,NI,NJ,NK,ni,nj,nk))
 {
-  int i, j, k;
   //#pragma scop
-  #pragma omp target data map(to: A[0:NI]) map(from: B[0:NI]) //#pragma acc data copyin (A) copyout (B)
+  //#pragma acc data copyin (A) copyout (B)
+  #pragma omp target data \
+    map(to: A[0:NI][0:NJ][0:NK]) \
+    map(from: B[0:NI][0:NJ][0:NK]) 
   {
     //#pragma acc parallel
     {
-      #pragma omp target teams distribute parallel for schedule(static, 1) num_teams(1) num_threads(1024) collapse(3) private(i,j,k) //#pragma acc loop
-      for (i = 1; i < _PB_NI - 1; ++i)
-//        #pragma acc loop
-        for (j = 1; j < _PB_NJ - 1; ++j)
-          for (k = 1; k < _PB_NK - 1; ++k)
-          {
-            B[i][j][k]
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (int i = 1; i < NI - 1; i++) {
+        for (int j = 1; j < NJ - 1; j++) {
+          for (int k = 1; k < NK - 1; k++) {
+            //printf("(%d, %d, %d) --> (%d, %d, %d)\n", i, j, k, i % 64, j % 1, k % 44);
+            B[i][j][k] 
               =  2 * A[i-1][j-1][k-1]  +  4 * A[i+1][j-1][k-1]
               +  5 * A[i-1][j-1][k-1]  +  7 * A[i+1][j-1][k-1]
               + -8 * A[i-1][j-1][k-1]  + 10 * A[i+1][j-1][k-1]
@@ -86,7 +87,10 @@ void kernel_conv2d(int ni,
               +  2 * A[i-1][j-1][k+1]  +  4 * A[i+1][j-1][k+1]
               +  5 * A[i-1][ j ][k+1]  +  7 * A[i+1][ j ][k+1]
               + -8 * A[i-1][j+1][k+1]  + 10 * A[i+1][j+1][k+1];
+
           }
+        }
+      }
     }
   }
   //#pragma endscop

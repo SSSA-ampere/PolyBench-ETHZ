@@ -67,59 +67,74 @@ void kernel_ludcmp(int n,
 		   DATA_TYPE POLYBENCH_1D(x,N+1,n+1),
 		   DATA_TYPE POLYBENCH_1D(y,N+1,n+1))
 {
-  int i, j, k;
 
   DATA_TYPE w;
-  
-  #pragma scop
-  #pragma acc data copy(x) copyin(A,b,y)
+
+  //#pragma scop
+  //#pragma acc data copy(x) copyin(A,b,y)
+  #pragma omp target data \
+    map(w) \
+    map(tofrom: x[0:N]) \
+    map(to: A[0:N], b[0:N], y[0:N])
   {
-    #pragma acc parallel
+    //#pragma acc parallel
     {
       b[0] = 1.0;
-      #pragma acc loop
-      for (i = 0; i < _PB_N; i++)
-	{
-	  #pragma acc loop
-	  for (j = i+1; j <= _PB_N; j++)
-	    {
-	      w = A[j][i];
-	      for (k = 0; k < i; k++)
-		w = w- A[j][k] * A[k][i];
-	      A[j][i] = w / A[i][i];
-	    }
-	  #pragma acc loop
-	  for (j = i+1; j <= _PB_N; j++)
-	    {
-	      w = A[i+1][j];
-	      for (k = 0; k <= i; k++)
-		w = w  - A[i+1][k] * A[k][j];
-	      A[i+1][j] = w;
-	    }
-	}
+
+      //#pragma acc loop
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (int i = 0; i < N; i++)
+      {
+        //#pragma acc loop
+        for (int j = i+1; j <= N; j++)
+        {
+          w = A[j][i];
+          for (int k = 0; k < i; k++)
+            w = w- A[j][k] * A[k][i];
+          A[j][i] = w / A[i][i];
+        }
+        //#pragma acc loop
+        for (int j = i+1; j <= N; j++)
+        {
+          w = A[i+1][j];
+          for (int k = 0; k <= i; k++)
+            w = w  - A[i+1][k] * A[k][j];
+          A[i+1][j] = w;
+        }
+      }
       y[0] = b[0];
-      #pragma acc loop
-      for (i = 1; i <= _PB_N; i++)
-	{
-	  w = b[i];
-	  #pragma acc loop
-	  for (j = 0; j < i; j++)
-	    w = w - A[i][j] * y[j];
-	  y[i] = w;
-	}
-      x[_PB_N] = y[_PB_N] / A[_PB_N][_PB_N];
-      #pragma acc loop
-      for (i = 0; i <= _PB_N - 1; i++)
-	{
-	  w = y[_PB_N - 1 - (i)];
-	  #pragma acc loop
-	  for (j = _PB_N - i; j <= _PB_N; j++)
-	    w = w - A[_PB_N - 1 - i][j] * x[j];
-	  x[_PB_N - 1 - i] = w / A[_PB_N - 1 - (i)][_PB_N - 1-(i)];
-	}
+
+      //#pragma acc loop
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (int i = 1; i <= N; i++)
+      {
+        w = b[i];
+        //#pragma acc loop
+        for (int j = 0; j < i; j++)
+          w = w - A[i][j] * y[j];
+        y[i] = w;
+      }
+      x[N] = y[N] / A[N][N];
+
+      //#pragma acc loop
+      //#pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (int i = 0; i <= N - 1; i++)
+      {
+        w = y[N - 1 - (i)];
+        //#pragma acc loop
+        for (int j = N - i; j <= N; j++)
+          w = w - A[N - 1 - i][j] * x[j];
+        x[N - 1 - i] = w / A[N - 1 - (i)][N - 1-(i)];
+      }
     }
   }
-  #pragma endscop
+  //#pragma endscop
 }
 
 

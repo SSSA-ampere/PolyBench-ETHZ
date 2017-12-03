@@ -8,13 +8,9 @@
  * Copyright 2013, The University of Delaware
  */
 
-#define  EXTRALARGE_DATASET
 //#define POLYBENCH_DUMP_ARRAYS
 //#define DATA_TYPE float
 //#define DATA_PRINTF_MODIFIER "%0.2f "
-
-#define NUM_TEAMS num_teams(1)
-#define THREAD_LIMIT thread_limit(1024)
 
 #include <stdio.h>
 #include <unistd.h>
@@ -66,13 +62,15 @@ static
 void kernel_floyd_warshall(int n,
      DATA_TYPE POLYBENCH_2D(path,N,N,n,n))
 {
-  int i, j, k;
-  #pragma omp target data map(tofrom: path[0:N])
+  #pragma omp target data \
+    map(tofrom: path[0:N])
   {
-    #pragma omp target teams distribute parallel for NUM_TEAMS THREAD_LIMIT private(i, j, k) shared(path)
-    for (k = 0; k < _PB_N; k++)
-      for(i = 0; i < _PB_N; i++)
-        for (j = 0; j < _PB_N; j++)
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+    for (int k = 0; k < N; k++)
+      for(int i = 0; i < N; i++)
+        for (int j = 0; j < N; j++)
           path[i][j] = path[i][j] < path[i][k] + path[k][j] ? path[i][j] : path[i][k] + path[k][j];
   }
 }

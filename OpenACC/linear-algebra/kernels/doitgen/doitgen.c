@@ -64,30 +64,37 @@ void kernel_doitgen(int nr, int nq, int np,
 		    DATA_TYPE POLYBENCH_2D(C4,NP,NP,np,np),
 		    DATA_TYPE POLYBENCH_3D(sum,NR,NQ,NP,nr,nq,np))
 {
-  int r, q, p, s;
-  #pragma scop
-  #pragma acc data copy(A) copyin(C4) create(sum)
+  //#pragma scop
+  //#pragma acc data copy(A) copyin(C4) create(sum)
+  #pragma omp target data \
+    map(tofrom: A) \
+    map(to: C4) \
+    map(alloc: sum)
   {
-    #pragma acc parallel
+    //#pragma acc parallel
     {
-      #pragma acc loop
-      for (r = 0; r < _PB_NR; r++)
-	for (q = 0; q < _PB_NQ; q++) 
-	  {
-	    #pragma acc loop
-	    for (p = 0; p < _PB_NP; p++)
-	      {
-		sum[r][q][p] = 0;
-		for (s = 0; s < _PB_NP; s++)
-		  sum[r][q][p] = sum[r][q][p] + A[r][q][s] * C4[s][p];
-	      }
-            #pragma acc loop
-	    for (p = 0; p < _PB_NR; p++)
-	      A[r][q][p] = sum[r][q][p];
-	}
+      //#pragma acc loop
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (int r = 0; r < NR; r++) {
+        for (int q = 0; q < NQ; q++) {
+          //#pragma acc loop
+          for (int p = 0; p < NP; p++) {
+            sum[r][q][p] = 0;
+            for (int s = 0; s < NP; s++) {
+              sum[r][q][p] = sum[r][q][p] + A[r][q][s] * C4[s][p];
+            }
+          }
+          //#pragma acc loop
+          for (int p = 0; p < NR; p++) {
+            A[r][q][p] = sum[r][q][p];
+          }
+        }
+      }
     }
   }
-  #pragma endscop
+  //#pragma endscop
 }
 
 int main(int argc, char** argv)

@@ -63,22 +63,27 @@ void kernel_trmm(int ni,
 		 DATA_TYPE POLYBENCH_2D(A,NI,NI,ni,ni),
 		 DATA_TYPE POLYBENCH_2D(B,NI,NI,ni,ni))
 {
-  int i, j, k;
-  #pragma scop
-  #pragma acc data copyin(A) copy(B)
+  //#pragma scop
+  //#pragma acc data copyin(A) copy(B)
+  #pragma omp target data \
+    map(tofrom: B[0:NI]) \
+    map(to: A[0:NI])
   {
-    #pragma acc parallel
+    //#pragma acc parallel
     {
       /*  B := alpha*A'*B, A triangular */
-      #pragma acc loop
-      for (i = 1; i < _PB_NI; i++)
-	for (j = 0; j < _PB_NI; j++)
-	  #pragma acc loop
-	  for (k = 0; k < i; k++)
-	    B[i][j] += alpha * A[i][k] * B[j][k];
+      //#pragma acc loop
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (int i = 1; i < NI; i++)
+        for (int j = 0; j < NI; j++)
+          //#pragma acc loop
+          for (int k = 0; k < i; k++)
+            B[i][j] += alpha * A[i][k] * B[j][k];
     }
   }
-  #pragma endscop
+  //#pragma endscop
 }
 
 

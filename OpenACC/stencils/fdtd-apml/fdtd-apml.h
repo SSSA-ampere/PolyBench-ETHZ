@@ -6,7 +6,7 @@
  * Web address: http://polybench.sourceforge.net
  */
 #ifndef FDTD_APML_H
-# define FDTD_AMPL_H
+# define FDTD_APML_H
 
 /* Default to STANDARD_DATASET. */
 # if !defined(MINI_DATASET) && !defined(SMALL_DATASET) && !defined(LARGE_DATASET) && !defined(EXTRALARGE_DATASET)
@@ -52,7 +52,7 @@
 # define _PB_CXM POLYBENCH_LOOP_BOUND(CXM,cxm)
 
 # ifndef DATA_TYPE
-#  define DATA_TYPE double
+#  define DATA_TYPE float
 #  define DATA_PRINTF_MODIFIER "%0.2lf "
 # endif
 

@@ -119,7 +119,7 @@ void kernel_correlation(int m, int n,
       for (int j = 0; j < M; j++)
       {
         data[i][j] -= mean[j];
-        data[i][j] /= sqrt(float_n) * stddev[j];      // XXX PROBLEM: Unknown. Probably because we use array again.
+        data[i][j] /= sqrt(float_n) * stddev[j];
       }
     }
 
@@ -127,17 +127,17 @@ void kernel_correlation(int m, int n,
     //#pragma omp target teams distribute parallel for schedule(static, 1) \
       num_teams(NUM_TEAMS) \
       num_threads(NUM_THREADS)
-    /*for (int j1 = 0; j1 < M-1; j1++)
-    {
-      symmat[j1][j1] = 1.0;
-      for (int j2 = j1+1; j2 < M; j2++)
-        {
-          symmat[j1][j2] = 0.0;
-          for (int i = 0; i < N; i++)
-            symmat[j1][j2] += (data[i][j1] * data[i][j2]);
-          symmat[j2][j1] = symmat[j1][j2];            // XXX PROBLEM: LD-deps!
-        }
-    }*/
+    //for (int j1 = 0; j1 < M-1; j1++)
+    //{
+    //  symmat[j1][j1] = 1.0;
+    //  for (int j2 = j1+1; j2 < M; j2++)
+    //    {
+    //      symmat[j1][j2] = 0.0;
+    //      for (int i = 0; i < N; i++)
+    //        symmat[j1][j2] += (data[i][j1] * data[i][j2]);
+    //      symmat[j2][j1] = symmat[j1][j2];            // XXX PROBLEM: LD-deps!
+    //    }
+    //}
   }
 
   symmat[_PB_M-1][_PB_M-1] = 1.0;

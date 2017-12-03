@@ -72,24 +72,34 @@ void kernel_mvt(int n,
 		DATA_TYPE POLYBENCH_2D(A,N,N,n,n))
 {
   int i, j;
-  #pragma scop
-  #pragma acc data copy(x1,x2) copyin(A,y_1,y_2)
+  //#pragma scop
+  //#pragma acc data copy(x1,x2) copyin(A,y_1,y_2)
+  #pragma omp target data \
+    map(tofrom: x1[0:N], x2[0:N]) \
+    map(from: A[0:N], y_1[0:N], y_2[0:N])
   {
-    #pragma acc parallel
+    //#pragma acc parallel
     {
-      #pragma acc loop
-      for (i = 0; i < _PB_N; i++)
-        #pragma acc loop
-	for (j = 0; j < _PB_N; j++)
-	  x1[i] = x1[i] + A[i][j] * y_1[j];
-      #pragma acc loop
-      for (i = 0; i < _PB_N; i++)
-	#pragma acc loop
-	for (j = 0; j < _PB_N; j++)
-	  x2[i] = x2[i] + A[j][i] * y_2[j];
+      //#pragma acc loop
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (i = 0; i < N; i++)
+        //#pragma acc loop
+        for (j = 0; j < N; j++)
+          x1[i] = x1[i] + A[i][j] * y_1[j];
+
+      //#pragma acc loop
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (i = 0; i < N; i++)
+        //#pragma acc loop
+        for (j = 0; j < N; j++)
+          x2[i] = x2[i] + A[j][i] * y_2[j];
     }
   }
-  #pragma endscop
+  //#pragma endscop
 }
 
 

@@ -57,26 +57,34 @@ static
 void kernel_lu(int n,
 	       DATA_TYPE POLYBENCH_2D(A,N,N,n,n))
 {
-  int i, j, k;
-  #pragma scop
-  #pragma acc data copy(A)
+
+  //#pragma scop
+  //#pragma acc data copy(A)
+  #pragma omp target data \
+    map(tofrom: A[0:N])
   {
-    #pragma acc parallel
+    //#pragma acc parallel
     {
-      #pragma acc loop
-      for (k = 0; k < _PB_N; k++)
-	{
-	  #pragma acc loop
-	  for (j = k + 1; j < _PB_N; j++)
-	    A[k][j] = A[k][j] / A[k][k];
-	  for(i = k + 1; i < _PB_N; i++)
-	    #pragma acc loop
-	    for (j = k + 1; j < _PB_N; j++)
-	      A[i][j] = A[i][j] - A[i][k] * A[k][j];
-	}
+      //#pragma acc loop
+
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (int k = 0; k < N; k++) {
+        //#pragma acc loop
+        for (int j = k + 1; j < N; j++) {
+          A[k][j] = A[k][j] / A[k][k];
+        }
+        for(int i = k + 1; i < N; i++) {
+          //#pragma acc loop
+          for (int j = k + 1; j < N; j++) {
+            A[i][j] = A[i][j] - A[i][k] * A[k][j];
+          }
+        }
+      }
     }
   }
-  #pragma endscop
+  //#pragma endscop
 }
 
 

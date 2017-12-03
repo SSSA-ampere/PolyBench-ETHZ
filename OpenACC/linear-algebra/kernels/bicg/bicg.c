@@ -72,29 +72,38 @@ void kernel_bicg(int nx, int ny,
                  DATA_TYPE POLYBENCH_1D(r,NX,nx))
 {
   int i, j;
-  #pragma acc data copyout(s,q) copyin(A,r,p)
+  //#pragma acc data copyout(s,q) copyin(A,r,p)
+  #pragma omp target data \
+    map(to: A[0:NX], r[0:NX], p[0:NY]) \
+    map(from: s[0:NY], q[0:NX])
   {
     /* q := A*p */
-    #pragma acc parallel present(q,A,p) \
+    //#pragma acc parallel present(q,A,p) \
                          num_gangs(nx/100) num_workers(100)
     {
-      #pragma acc loop gang worker
-      for (i = 0; i < _PB_NX; i++) {
+      //#pragma acc loop gang worker
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (i = 0; i < NX; i++) {
         q[i] = 0;
-        #pragma acc loop seq
-        for (j = 0; j < _PB_NY; j++)
+        //#pragma acc loop seq
+        for (j = 0; j < NY; j++)
           q[i] = q[i] + A[i][j] * p[j];
       }
     }
     /* s := r*A */
-    #pragma acc parallel present(s,r,A) \
+    //#pragma acc parallel present(s,r,A) \
                          num_gangs(ny/100) num_workers(100)
     {
-      #pragma acc loop gang worker
-      for (j = 0; j < _PB_NY; j++) {
+      //#pragma acc loop gang worker
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (j = 0; j < NY; j++) {
         s[j] = 0;
-        #pragma acc loop seq
-        for (i = 0; i < _PB_NX; i++)
+        //#pragma acc loop seq
+        for (i = 0; i < NX; i++)
           s[j] = s[j] + r[i] * A[i][j];
       }
     }

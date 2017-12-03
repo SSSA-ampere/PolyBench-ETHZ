@@ -69,7 +69,6 @@ void kernel_covariance(int m, int n,
            DATA_TYPE POLYBENCH_2D(symmat,M,M,m,m),
            DATA_TYPE POLYBENCH_1D(mean,M,m))
 {
-  int i, j, j1, j2;
   
 
   /* Determine mean of column vectors of input data matrix */
@@ -79,10 +78,10 @@ void kernel_covariance(int m, int n,
         firstprivate(float_n) \
         num_teams(NUM_TEAMS) \
         num_threads(NUM_THREADS)
-      for (j = 0; j < M; j++)
+      for (int j = 0; j < M; j++)
       {
         mean[j] = 0.0;
-        for (i = 0; i < N; i++)
+        for (int i = 0; i < N; i++)
           mean[j] += data[i][j];
         mean[j] /= float_n;
       }
@@ -91,9 +90,9 @@ void kernel_covariance(int m, int n,
       #pragma omp target teams distribute parallel for schedule(static, 1) \
         num_teams(NUM_TEAMS) \
         num_threads(NUM_THREADS)
-      for (i = 0; i < N; i++)
+      for (int i = 0; i < N; i++)
       {
-        for (j = 0; j < M; j++)
+        for (int j = 0; j < M; j++)
           data[i][j] -= mean[j];
       }
       
@@ -101,16 +100,16 @@ void kernel_covariance(int m, int n,
       //#pragma omp target teams distribute parallel for schedule(static, 1) \
         num_teams(NUM_TEAMS) \
         num_threads(NUM_THREADS)
-      /*for (j1 = 0; j1 < M; j1++)
-      {
-        for (j2 = j1; j2 < M; j2++)
-          {
-            symmat[j1][j2] = 0.0;     // XXX PROBLEM: LB-dep
-            for (i = 0; i < _PB_N; i++)
-              symmat[j1][j2] += data[i][j1] * data[i][j2];
-            symmat[j2][j1] = symmat[j1][j2];
-          }
-      }*/
+      //for (int j1 = 0; j1 < M; j1++)
+      //{
+      //  for (int j2 = j1; j2 < M; j2++)
+      //    {
+      //      symmat[j1][j2] = 0.0;     // XXX PROBLEM: LB-dep
+      //      for (int i = 0; i < N; i++)
+      //        symmat[j1][j2] += data[i][j1] * data[i][j2];
+      //      symmat[j2][j1] = symmat[j1][j2];
+      //    }
+      //}
   }
 }
 

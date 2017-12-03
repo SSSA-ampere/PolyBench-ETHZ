@@ -62,24 +62,29 @@ void kernel_trisolv(int n,
 		    DATA_TYPE POLYBENCH_1D(x,N,n),
 		    DATA_TYPE POLYBENCH_1D(c,N,n))
 {
-  int i, j;
-  #pragma scop
-  #pragma acc data copy(x) copyin(A,c)
+  //#pragma scop
+  //#pragma acc data copy(x) copyin(A,c)
+  #pragma omp target data \
+    map(tofrom: x[0:N]) \
+    map(to: A[0:N], c[0:N])
   {
-    #pragma acc parallel
+    //#pragma acc parallel
     {
-      #pragma acc loop
-      for (i = 0; i < _PB_N; i++)
-	{
-	  x[i] = c[i];
-	  #pragma acc loop
-	  for (j = 0; j <= i - 1; j++)
-	    x[i] = x[i] - A[i][j] * x[j];
-	  x[i] = x[i] / A[i][i];
-	}
+      //#pragma acc loop
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
+        num_teams(NUM_TEAMS) \
+        num_threads(NUM_THREADS)
+      for (int i = 0; i < N; i++)
+      {
+        x[i] = c[i];
+        //#pragma acc loop
+        for (int j = 0; j <= i - 1; j++)
+          x[i] = x[i] - A[i][j] * x[j];
+        x[i] = x[i] / A[i][i];
+      }
     }
   }
-  #pragma endscop
+  //#pragma endscop
 }
 
 

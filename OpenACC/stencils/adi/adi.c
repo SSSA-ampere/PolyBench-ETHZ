@@ -84,7 +84,7 @@ void kernel_adi(int tsteps,
                         B[i1][i2] = B[i1][i2] - A[i1][i2] * A[i1][i2] / B[i1][i2-1];
                     }
 
-                //#pragma omp target teams distribute parallel for schedule(static,1) \
+                #pragma omp target teams distribute parallel for schedule(static,1) \
                     collapse(1) \
                     num_teams(NUM_TEAMS) \
                     num_threads(NUM_THREADS)
@@ -109,7 +109,7 @@ void kernel_adi(int tsteps,
                         B[i1][i2] = B[i1][i2] - A[i1][i2] * A[i1][i2] / B[i1-1][i2];
                     }
 
-                //#pragma omp target teams distribute parallel for schedule(static,1) \
+                #pragma omp target teams distribute parallel for schedule(static,1) \
                     num_teams(NUM_TEAMS) \
                     num_threads(NUM_THREADS)
                 for (int i2 = 0; i2 < N; i2++)
