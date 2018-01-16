@@ -108,6 +108,8 @@ void kernel_bicg(int nx, int ny,
       }
     }
   }
+
+  printf("s[10] = %f\n", s[10]);
 }
 
 

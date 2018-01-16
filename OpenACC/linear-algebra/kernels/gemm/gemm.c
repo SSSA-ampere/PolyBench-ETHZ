@@ -84,13 +84,22 @@ void kernel_gemm(int ni, int nj, int nk,
       #pragma omp target teams distribute parallel for schedule(static, 1) \
         num_teams(NUM_TEAMS) \
         num_threads(NUM_THREADS)
-        for (i = 0; i < NI; i++)
-            for (j = 0; j < NJ; j++)
-            {
+        for (i = 0; i < NI; i++) {
+            for (j = 0; j < NJ; j++) {
                 C[i][j] *= beta;
-                for (k = 0; k < NK; ++k)
-                    C[i][j] += alpha * A[i][k] * B[k][j];
+                for (k = 0; k < NK; ++k) {
+                    //if(C[i][j] == 0) {
+                    //    C[i][j] += alpha * A[i][k] * B[k][j];
+                    //    C[i][j] += alpha * A[i][k] * B[k][j];
+                        C[i][j] += alpha * A[i][k] * B[k][j];
+                    //} else {
+                    //    A[i][j] += alpha * A[i][k] * B[k][j];
+                    //    A[i][j] += alpha * A[i][k] * B[k][j];
+                    //    A[i][j] += alpha * A[i][k] * B[k][j];
+                    //}
+                }
             }
+        }
     }
   }
   //#pragma endscop

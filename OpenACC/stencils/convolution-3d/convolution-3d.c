@@ -93,6 +93,8 @@ void kernel_conv2d(int ni,
       }
     }
   }
+
+  printf("B[5][7][3] = %f\n", B[5][7][3]);
   //#pragma endscop
 }
 

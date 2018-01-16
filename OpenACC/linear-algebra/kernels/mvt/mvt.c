@@ -100,6 +100,8 @@ void kernel_mvt(int n,
     }
   }
   //#pragma endscop
+
+  printf("x2[7] = %f\n", x2[7]);
 }
 
 

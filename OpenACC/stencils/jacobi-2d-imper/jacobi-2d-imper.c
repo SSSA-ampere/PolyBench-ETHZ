@@ -63,28 +63,26 @@ void kernel_jacobi_2d_imper(int tsteps,
     DATA_TYPE POLYBENCH_2D(A,N,N,n,n),
     DATA_TYPE POLYBENCH_2D(B,N,N,n,n))
 {
-  int t, i, j;
-
   //#pragma scop
 
   #pragma omp target data map(tofrom: A[0:N], B[0:N]) //acc data copy(A) copyin(B)
   {
     //#pragma acc parallel
     {
-      for (t = 0; t < _PB_TSTEPS; t++)
+      for (int t = 0; t < _PB_TSTEPS; t++)
       {
         #pragma omp target teams distribute parallel for schedule(static, 1) collapse(1) num_teams(NUM_TEAMS) num_threads(NUM_THREADS)//acc loop
-        for (i = 1; i < N - 1; i++) {
+        for (int i = 1; i < N - 1; i++) {
           //#pragma acc loop
-          for (j = 1; j < N - 1; j++) {
+          for (int j = 1; j < N - 1; j++) {
             B[i][j] = 0.2 * (A[i][j] + A[i][j-1] + A[i][1+j] + A[1+i][j] + A[i-1][j]);
           }
         }
         
         #pragma omp target teams distribute parallel for schedule(static, 1) collapse(1) num_teams(NUM_TEAMS) num_threads(NUM_THREADS)//acc loop
-        for (i = 1; i < N-1; i++) {
+        for (int i = 1; i < N-1; i++) {
           //#pragma acc loop
-          for (j = 1; j < N-1; j++) {
+          for (int j = 1; j < N-1; j++) {
             A[i][j] = B[i][j];
           }
         }
@@ -92,6 +90,8 @@ void kernel_jacobi_2d_imper(int tsteps,
     }
   }
   //#pragma endscop
+
+  printf("A[8][5] = %f\n", A[8][5]);
 }
 
 

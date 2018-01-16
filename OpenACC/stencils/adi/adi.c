@@ -84,12 +84,12 @@ void kernel_adi(int tsteps,
                         B[i1][i2] = B[i1][i2] - A[i1][i2] * A[i1][i2] / B[i1][i2-1];
                     }
 
-                #pragma omp target teams distribute parallel for schedule(static,1) \
+                //#pragma omp target teams distribute parallel for schedule(static,1) \
                     collapse(1) \
                     num_teams(NUM_TEAMS) \
                     num_threads(NUM_THREADS)
                 for (int i1 = 0; i1 < N; i1++)
-                    X[i1][N-1] = X[i1][N-1] / B[i1][N-1];
+                    X[i1][N-1] = X[i1][N-2] / B[i1][N-1];
 
                 #pragma omp target teams distribute parallel for schedule(static,1) \
                     collapse(1) \
@@ -109,7 +109,7 @@ void kernel_adi(int tsteps,
                         B[i1][i2] = B[i1][i2] - A[i1][i2] * A[i1][i2] / B[i1-1][i2];
                     }
 
-                #pragma omp target teams distribute parallel for schedule(static,1) \
+                //#pragma omp target teams distribute parallel for schedule(static,1) \
                     num_teams(NUM_TEAMS) \
                     num_threads(NUM_THREADS)
                 for (int i2 = 0; i2 < N; i2++)
@@ -122,9 +122,43 @@ void kernel_adi(int tsteps,
                 for (int i1 = 0; i1 < N-2; i1++)
                     for (int i2 = 0; i2 < N; i2++)
                         X[N-2-i1][i2] = (X[N-2-i1][i2] - X[N-i1-3][i2] * A[N-3-i1][i2]) / B[N-2-i1][i2];
+
+                
+                // XXX DEBUG
+                //#pragma omp target teams distribute parallel for schedule(static,1) \
+                    collapse(1) \
+                    num_teams(NUM_TEAMS) \
+                    num_threads(NUM_THREADS)
+                //for (int i1 = 0; i1 < N-2; i1++)
+                //    for (int i2 = 0; i2 < N; i2++) {
+                //        X[N-2-i1][i2] = X[N-2-i1][i2] - X[N-i1-3][i2];
+                //    }
+
+                //#pragma omp target teams distribute parallel for schedule(static,1) \
+                //    collapse(1) \
+                //    num_teams(NUM_TEAMS) \
+                //    num_threads(NUM_THREADS)
+                //for (int i1 = 0; i1 < N-2; i1++)
+                //    for (int i2 = 1; i2 < N; i2++)
+                //        X[N-2-i1][i2] = X[N-3-i1][i2-1];
+                
+                //#pragma omp target teams distribute parallel for schedule(static,1) \
+                //    collapse(1) \
+                //    num_teams(NUM_TEAMS) \
+                //    num_threads(NUM_THREADS)
+                //for (int i1 = 0; i1 < N-2; i1++)
+                //    for (int i2 = 0; i2 < N; i2++)
+                //        X[i1 + 2][i2] = 1.0;
+                // XXX END DEBUG
+                
             }
         }
     }
+
+    printf("X[1][1] = %f\n", X[1][1]);
+    //printf("X[1000][1000] = %f\n", X[1000][1000]);
+    printf("B[1][1] = %f\n", B[1][1]);
+    printf("B[1000][1000] = %f\n", B[1000][1000]);
 }
 
 

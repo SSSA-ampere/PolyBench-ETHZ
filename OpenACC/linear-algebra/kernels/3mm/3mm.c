@@ -74,13 +74,12 @@ void kernel_3mm(int ni, int nj, int nk, int nl, int nm,
                 DATA_TYPE POLYBENCH_2D(D,NM,NL,nm,nl),
                 DATA_TYPE POLYBENCH_2D(G,NI,NL,ni,nl))
 {
-  int i, j, k;
 
   //#pragma acc data copyin(A,B,C,D) create(E,F) copyout(G)
   #pragma omp target data \
-    map(to: A[0:NI], B[0:NK], C[0:NI], D[0:NK]) \
-    map(alloc: E[0:NI], F[0:NK]) \
-    map(from: G[0:NI])
+    map(tofrom: A[0:NI], B[0:NK], C[0:NJ], D[0:NM]) \
+    map(tofrom: E[0:NI], F[0:NJ]) \
+    map(tofrom: G[0:NI])
   {
     /* E := A*B */
     //#pragma acc parallel present(E,A,B) \
@@ -91,12 +90,12 @@ void kernel_3mm(int ni, int nj, int nk, int nl, int nm,
       #pragma omp target teams distribute parallel for schedule(static, 1) \
         num_teams(NUM_TEAMS) \
         num_threads(NUM_THREADS)
-      for (j = 0; j < NJ; j++) {
+      for (int j = 0; j < NJ; j++) {
         //#pragma acc loop gang[0] worker[0]
-        for (i = 0; i < NJ; i++) {
+        for (int i = 0; i < NJ; i++) {
           E[i][j] = 0;
           //#pragma acc loop seq
-          for (k = 0; k < NK; ++k)
+          for (int k = 0; k < NK; ++k)
               E[i][j] += A[i][k] * B[k][j];
         }
       }
@@ -110,12 +109,12 @@ void kernel_3mm(int ni, int nj, int nk, int nl, int nm,
       #pragma omp target teams distribute parallel for schedule(static, 1) \
         num_teams(NUM_TEAMS) \
         num_threads(NUM_THREADS)
-      for (j = 0; j < NL; j++) {
-        for (i = 0; i < NJ; i++) {
+      for (int j = 0; j < NL; j++) {
+        for (int i = 0; i < NJ; i++) {
         //#pragma acc loop gang[0] worker[0]
           F[i][j] = 0;
           //#pragma acc loop seq
-          for (k = 0; k < NM; ++k)
+          for (int k = 0; k < NM; ++k)
             F[i][j] += C[i][k] * D[k][j];
         }
       }
@@ -129,17 +128,19 @@ void kernel_3mm(int ni, int nj, int nk, int nl, int nm,
       #pragma omp target teams distribute parallel for schedule(static, 1) \
         num_teams(NUM_TEAMS) \
         num_threads(NUM_THREADS)
-      for (j = 0; j < NL; j++) {
-        for (i = 0; i < NI; i++) {
+      for (int j = 0; j < NL; j++) {
+        for (int i = 0; i < NI; i++) {
         //#pragma acc loop gang[0] worker[0]
           G[i][j] = 0;
           //#pragma acc loop seq
-          for (k = 0; k < NJ; ++k)
+          for (int k = 0; k < NJ; ++k)
             G[i][j] += E[i][k] * F[k][j];
         }
       }
     }
   }
+
+  printf("G[11][4] = %f\n", G[11][4]);
 }
 
 int main(int argc, char** argv)

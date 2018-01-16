@@ -80,6 +80,7 @@ void kernel_reg_detect(int niter, int maxgrid, int length,
     for (int t = 0; t < NITER; t++)
     {
 
+      // TODO: Too much memory use (512 threads)
       #pragma omp target teams distribute parallel for schedule(static, 1) \
         num_teams(NUM_TEAMS) \
         num_threads(NUM_THREADS)
@@ -91,29 +92,29 @@ void kernel_reg_detect(int niter, int maxgrid, int length,
         }
       }
 
-      // TODO: Too much memory use
-      //#pragma omp target teams distribute parallel for schedule(static, 1) \
+      // TODO: Too much memory use (512 threads)
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
         num_teams(NUM_TEAMS) \
         num_threads(NUM_THREADS)
-      //for (int j = 0; j <= MAXGRID - 1; j++)
-      //{
-      //  for (int i = j; i <= MAXGRID - 1; i++)
-      //  {
-      //    sum_diff[j][i][0] = diff[j][i][0];
-      //    for (int cnt = 1; cnt <= LENGTH - 1; cnt++)
-      //      sum_diff[j][i][cnt] = sum_diff[j][i][cnt - 1] + diff[j][i][cnt];
-      //    mean[j][i] = sum_diff[j][i][LENGTH - 1];
-      //  }
-      //}
+      for (int j = 0; j <= MAXGRID - 1; j++)
+      {
+        for (int i = j; i <= MAXGRID - 1; i++)
+        {
+          sum_diff[j][i][0] = diff[j][i][0];
+          for (int cnt = 1; cnt <= LENGTH - 1; cnt++)
+            sum_diff[j][i][cnt] = sum_diff[j][i][cnt - 1] + diff[j][i][cnt];
+          mean[j][i] = sum_diff[j][i][LENGTH - 1];
+        }
+      }
 
-      // TODO: Too much memory use, but also: Error in WarpSpec
-      //#pragma omp target teams distribute parallel for schedule(static, 1) \
+      #pragma omp target teams distribute parallel for schedule(static, 1) \
         num_teams(NUM_TEAMS) \
         num_threads(NUM_THREADS)
-      //for (int i = 0; i <= MAXGRID - 1; i++) {
-      //  path[0][i] = mean[0][i];
-      //}
+      for (int i = 0; i <= MAXGRID - 1; i++) {
+        path[0][i] = mean[0][i];
+      }
 
+      // TODO: Too much memory use (512 threads)
       #pragma omp target teams distribute parallel for schedule(static, 1) \
         num_teams(NUM_TEAMS) \
         num_threads(NUM_THREADS)

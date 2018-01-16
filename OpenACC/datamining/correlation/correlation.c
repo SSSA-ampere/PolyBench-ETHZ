@@ -140,6 +140,9 @@ void kernel_correlation(int m, int n,
     //}
   }
 
+  printf("W/O last: data[7][3] = %f\n", data[7][3]);
+  printf("W last: symmat[10][5] = %f\n", symmat[10][5]);
+
   symmat[_PB_M-1][_PB_M-1] = 1.0;
 }
 

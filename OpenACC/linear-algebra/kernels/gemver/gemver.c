@@ -119,7 +119,7 @@ void kernel_gemver(int n,
       }
 
       //#pragma acc loop
-      #pragma omp target teams distribute parallel for schedule(static, 1) \
+      //#pragma omp target teams distribute parallel for schedule(static, 1) \
         num_teams(NUM_TEAMS) \
         num_threads(NUM_THREADS)
       for (int i = 0; i < N; i++) {
@@ -140,6 +140,8 @@ void kernel_gemver(int n,
     }
   }
   //#pragma endscop
+
+  printf("w[10] = %f\n", w[10]);
 }
 
 

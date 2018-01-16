@@ -101,6 +101,8 @@ void kernel_atax(int nx, int ny,
       }
     }
   }
+
+  printf("y[5] = %f\n", y[5]);
 }
 
 

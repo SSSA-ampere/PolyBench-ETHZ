@@ -111,6 +111,9 @@ void kernel_covariance(int m, int n,
       //    }
       //}
   }
+  
+  printf("W/O last: data[7][3] = %f\n", data[7][3]);
+  printf("W last: symmat[10][5] = %f\n", symmat[10][5]);
 }
 
 int main(int argc, char** argv)

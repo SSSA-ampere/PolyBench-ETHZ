@@ -74,6 +74,8 @@ void kernel_seidel_2d(int tsteps,
     }
   }
   //#pragma endscop
+
+  printf("A[9][2] = %f\n", A[9][2]);
 }
 
 

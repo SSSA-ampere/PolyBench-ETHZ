@@ -84,6 +84,8 @@ void kernel_trmm(int ni,
     }
   }
   //#pragma endscop
+
+  printf("B[3][7] = %f\n", B[3][7]);
 }
 
 

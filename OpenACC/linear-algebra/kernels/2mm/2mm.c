@@ -124,6 +124,8 @@ void kernel_2mm(int ni, int nj, int nk, int nl,
       }
     }
   }
+
+  printf("D[2][4] = %f\n", D[2][4]);
 }
 
 

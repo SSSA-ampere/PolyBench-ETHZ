@@ -86,12 +86,12 @@ void kernel_gesummv(int n,
       #pragma omp target teams distribute parallel for schedule(static, 1) \
         num_teams(NUM_TEAMS) \
         num_threads(NUM_THREADS)
-      for (i = 0; i < N; i++)
+      for (int i = 0; i < N; i++)
       {
         tmp[i] = 0;
         y[i] = 0;
         //#pragma acc loop
-        for (j = 0; j < N; j++)
+        for (int j = 0; j < N; j++)
         {
           tmp[i] = A[i][j] * x[j] + tmp[i];
           y[i] = B[i][j] * x[j] + y[i];
@@ -101,6 +101,8 @@ void kernel_gesummv(int n,
     }
   }
   //#pragma endscop
+
+  printf("y[7] = %f\n", y[7]);
 }
 
 

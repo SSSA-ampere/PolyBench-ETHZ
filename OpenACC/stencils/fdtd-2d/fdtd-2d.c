@@ -78,22 +78,23 @@ void kernel_fdtd_2d(int tmax,
 		    DATA_TYPE POLYBENCH_1D(_fict_,TMAX,tmax))
 {
 
-  //int t, i, j;
-  //#pragma scop
-  #pragma omp target data map(tofrom: ey[0:NX], ex[0:NX], hz[0:NX], _fict_[0:TMAX]) //acc data copy(ey,ex,hz) copyin(_fict_)
-  {
     //#pragma acc parallel
     {
       for (int t = 0; t < _PB_TMAX; t++)
       {
 
 
-
         //#pragma omp target teams distribute parallel for schedule(static, 1) \
-            num_teams(NUM_TEAMS) num_threads(NUM_THREADS)
-        for (int j = 0; j < NY; j++) {
-          ey[0][j] = _fict_[t];
-        }
+        num_teams(NUM_TEAMS) num_threads(NUM_THREADS)
+          for (int j = 0; j < NY; j++) {
+            ey[0][j] = _fict_[t];
+          }
+
+        //int t, i, j;
+        //#pragma scop
+        #pragma omp target data map(tofrom: ey[0:NX], ex[0:NX], hz[0:NX], _fict_[0:TMAX]) //acc data copy(ey,ex,hz) copyin(_fict_)
+        {
+
 
 
         #pragma omp target teams distribute parallel for schedule(static, 1) collapse(1) \
@@ -128,6 +129,8 @@ void kernel_fdtd_2d(int tmax,
       }
     }
   }
+
+  printf("hz[9][3] = %f\n", hz[9][3]);
   //#pragma endscop
 }
 
