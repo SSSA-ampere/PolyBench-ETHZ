@@ -56,7 +56,7 @@
 #  define DATA_PRINTF_MODIFIER "%0.2f "
 # endif
 
-// XXX
-#define TMAX 1
+// commented by Amory
+//#define TMAX 1
 
 #endif /* !FDTD_2D */

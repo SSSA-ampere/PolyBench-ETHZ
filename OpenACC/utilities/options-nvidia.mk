@@ -15,5 +15,5 @@ LIBS+=-fopenmp -fopenmp-targets=nvptx64-nvidia-cuda
 CC = clang
 
 # Compiler flags
-CFLAGS = -O2
+CFLAGS += -O2
 
