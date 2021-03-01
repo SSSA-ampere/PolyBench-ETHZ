@@ -1,4 +1,4 @@
-INCPATHS = -I$(UTIL_DIR)
+INCPATHS += -I$(UTIL_DIR)
 
 BENCHMARK = $(shell basename `pwd`)
 EXE = $(BENCHMARK)
@@ -15,7 +15,7 @@ all : exe
 exe : $(EXE)
 
 $(EXE) : $(SRC)
-	$(CC) $(CFLAGS) $(ACCFLAGS)  $(ACC_INC_PATH) $(ACC_LIB_PATH) $(INCPATHS) $^ $(ACC_LIBS)
+	$(CC) $(CFLAGS) $(LIB_PATH) $(INCPATHS) $^ $(LIBS)
 
 check: exe
 	./$(EXE)
