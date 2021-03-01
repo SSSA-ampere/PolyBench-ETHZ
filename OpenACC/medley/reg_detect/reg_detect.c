@@ -123,6 +123,8 @@ void kernel_reg_detect(int niter, int maxgrid, int length,
           path[j][i] = path[j - 1][i - 1] + mean[j][i];
     }
   }
+  printf("path[MAXGRID-1][MAXGRID-1] = %d\n", path[MAXGRID-1][MAXGRID-1]);
+
 }
 
 int main(int argc, char** argv)

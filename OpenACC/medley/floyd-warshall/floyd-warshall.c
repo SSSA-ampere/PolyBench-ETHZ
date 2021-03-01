@@ -73,6 +73,7 @@ void kernel_floyd_warshall(int n,
         for (int j = 0; j < N; j++)
           path[i][j] = path[i][j] < path[i][k] + path[k][j] ? path[i][j] : path[i][k] + path[k][j];
   }
+  printf("path[10][10] = %f\n", path[10][10]);
 }
 
 
