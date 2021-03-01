@@ -96,6 +96,7 @@ void kernel_syrk(int ni, int nj,
             C[i][j] += alpha * A[i][k] * A[j][k];
     }
   }
+  printf("C[9][3] = %f\n", C[9][3]);
   //#pragma endscop
 }
 

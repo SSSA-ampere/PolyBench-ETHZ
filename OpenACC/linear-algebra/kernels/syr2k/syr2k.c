@@ -106,6 +106,7 @@ void kernel_syr2k(int ni, int nj,
       }
     }
   }
+  printf("C[9][3] = %f\n", C[9][3]);
   //#pragma endscop
 }
 

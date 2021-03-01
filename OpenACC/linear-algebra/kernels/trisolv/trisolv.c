@@ -84,6 +84,7 @@ void kernel_trisolv(int n,
       }
     }
   }
+  printf("x[3] = %f\n", x[3]);
   //#pragma endscop
 }
 

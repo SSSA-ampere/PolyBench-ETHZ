@@ -91,6 +91,7 @@ void kernel_cholesky(int n,
       }
     }
   }
+  printf("A[9][3] = %f\n", A[9][3]);
   //#pragma endscop
 }
 
