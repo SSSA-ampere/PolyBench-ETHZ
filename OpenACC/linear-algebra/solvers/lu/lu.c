@@ -84,6 +84,7 @@ void kernel_lu(int n,
       }
     }
   }
+  printf("A[10][10] = %f\n", A[10][10]);
   //#pragma endscop
 }
 

@@ -110,6 +110,8 @@ void kernel_gramschmidt(int ni, int nj,
     }
   }
   //#pragma endscop
+  printf("Q[3][2] = %f\n", Q[3][2]);
+  //print_array(NI,NJ,A,R,Q);
 }
 
 

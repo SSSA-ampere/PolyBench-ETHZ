@@ -93,10 +93,13 @@ void kernel_dynprog(int tsteps, int length,
           }
         }
         out_l += c[0][LENGTH - 1];
+        printf("out = %d\n", out_l);
       }
     }
   }
   //#pragma endscop
+  
+  //printf("c[10][10] = %d\n", c[10][10]);
   *out = out_l;
 }
 

@@ -4,7 +4,7 @@ all:
 	make -C convolution-2d all
 	make -C convolution-3d all
 	make -C fdtd-2d all
-	make -C fdtd-apml all
+	#make -C fdtd-apml all
 	make -C jacobi-1d-imper all
 	make -C jacobi-2d-imper all
 	make -C seidel-2d all

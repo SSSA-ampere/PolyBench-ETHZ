@@ -11,3 +11,6 @@ clean:
 	make -C kernels clean
 	make -C solvers clean
 
+run:
+	make -C kernels run
+	make -C solvers run
