@@ -3,8 +3,8 @@ INCPATHS = -I$(UTIL_DIR)
 BENCHMARK = $(shell basename `pwd`)
 EXE = $(BENCHMARK)
 OBJ = rose_$(BENCHMARK).c
-SRC = $(BENCHMARK).c
-HEADERS = $(BENCHMARK).h
+SRC = $(BENCHMARK).c $(UTIL_DIR)/polybench.c
+HEADERS = $(BENCHMARK).h $(UTIL_DIR)/polybench.h
 
 DEPS        := Makefile.dep
 DEP_FLAG    := -MM
@@ -18,7 +18,7 @@ exe : $(EXE)
 $(OBJ) : $(SRC)
 	$(ACC) $(ACCFLAGS) $(ACC_INC_PATH) $(INCPATHS) $^
 
-$(EXE) : $(OBJ) $(BENCHMARK)-data.c $(UTIL_DIR)/polybench.c
+$(EXE) : $(OBJ) $(BENCHMARK)-data.c 
 	$(CC) -o $@ $(CFLAGS) $(ACC_INC_PATH) $(ACC_LIB_PATH) $(INCPATHS) $^ $(ACC_LIBS)
 
 check: exe

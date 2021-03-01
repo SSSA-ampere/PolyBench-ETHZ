@@ -50,7 +50,7 @@
 #  define DATA_PRINTF_MODIFIER "%0.2lf "
 # endif
 
-// XXX
-#define TSTEPS 1
+// commented by Amory
+//#define TSTEPS 1
 
 #endif /* !JACOBI_2D_IMPER */
