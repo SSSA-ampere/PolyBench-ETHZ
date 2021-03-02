@@ -1,5 +1,19 @@
+# Vivado
+*.log
+*.jou
+vivado/**
+
+#Visual Code studio
+.vscode/**
+
+# Prerequisites
+*.d
+
 # Object files
 *.o
+*.ko
+*.obj
+*.elf
 
 # Libraries
 *.lib

@@ -4,7 +4,7 @@ set num_slots 1
 set name "hls_design"
 set device {xc7z020clg400-1}
 set period 10
-set sim 1 
+set sim 0 
 
 open_project -reset $name
 
