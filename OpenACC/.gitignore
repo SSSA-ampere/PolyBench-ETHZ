@@ -5,3 +5,5 @@ Makefile.dep
 *.sl3
 rose_*.c
 
+**/hls_design/
+**/vivado_hls.log

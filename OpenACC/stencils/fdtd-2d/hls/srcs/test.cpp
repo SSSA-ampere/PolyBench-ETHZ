@@ -43,7 +43,7 @@ int main()
 		print_vect(0, 10);
 		return(1);
 	}
-
+	printf("Match!\n");
 	return 0;
 }
 

@@ -11,6 +11,7 @@
 */
 
 #include "hw_mod.hpp"
+//#include <iostream>
 
 void hw_mod(args_t *id, args_t args[ARGS_SIZE], volatile data_t *mem_in, volatile data_t *mem_out)
 {
@@ -24,7 +25,12 @@ void hw_mod(args_t *id, args_t args[ARGS_SIZE], volatile data_t *mem_in, volatil
 
 	for (int i = 0; i < BLOCK_SIZE_DT; ++i) {
 		#pragma HLS PIPELINE
-		temp = *(mem_in + i + (arg_in / sizeof(data_t)));
-		*(mem_out + i + (arg_out / sizeof(data_t))) = temp;
+		//printf("%p - %#X\n",mem_in,arg_in);
+		//printf("%p\n",(mem_in + i));
+		//printf("%p\n",(mem_in + i + (arg_in / sizeof(data_t))));
+		//temp = *(mem_in + i + (arg_in / sizeof(data_t)));
+		//*(mem_out + i + (arg_out / sizeof(data_t))) = temp;
+		temp = *(mem_in + i);
+		*(mem_out + i ) = temp;
 	}
 }
