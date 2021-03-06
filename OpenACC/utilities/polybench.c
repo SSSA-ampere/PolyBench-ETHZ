@@ -145,7 +145,7 @@ void test_fail(char *file, int line, char *call, int retval)
   else
     {
       char errstring[PAPI_MAX_STR_LEN];
-      PAPI_perror (retval, errstring, PAPI_MAX_STR_LEN);
+      //PAPI_perror (retval, errstring, PAPI_MAX_STR_LEN);
       fprintf (stdout,"Error in %s: %s\n", call, errstring);
     }
   fprintf (stdout,"\n");
